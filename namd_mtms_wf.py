@@ -9,6 +9,9 @@ import bigjobasync
 #
 if __name__ == '__main__':
 
+    #
+    # Resource configuration
+    #
     resource = bigjobasync.Resource(
         name = "india",
         resource = bigjobasync.RESOURCES['FUTUREGRID.INDIA'],
@@ -21,23 +24,33 @@ if __name__ == '__main__':
     #
     # Application specific runtime characteristics
     #
+
     # Number of chromosomes
     NUM_CHRS = 1 # exp:5
     # Number of locations per chromosome
     NUM_LOCS = 2 # exp:21
-    # Total number of systems to model, paper uses 105
-    NUM_SYSTEMS = NUM_CHRS * NUM_LOCS
     # The time of simulation per system
     SIM_TRAJ_TIME = 3 # exp:20
     # The simulation time per dynamic step
     TASK_SIM_TIME = 1
+    # Executable to run for every task
+    EXECUTABLE = 'namd-mockup.sh'
+
+
+    #
+    # !!! No user-servicable parts below !!!
+    # (Not completely true, but true enough!)
+    #
+
     # The number of dynamic steps per system
     NUM_STEPS = SIM_TRAJ_TIME / TASK_SIM_TIME
+    # Total number of systems to model, paper uses 105
+    NUM_SYSTEMS = NUM_CHRS * NUM_LOCS
 
     mtms = MultiTaskMultiStage(resource)
     mtms.tasks = range(NUM_SYSTEMS)
     mtms.stages = range(NUM_STEPS)
-    mtms.task_executable = 'namd-mockup.sh'
+    mtms.task_executable = EXECUTABLE
     mtms.task_arguments = '(chr + loc)/${__TASK__} ${__STAGE__} ${i_conf} ${i_pdb} ${i_crd} ${i_parm} ${i_coor} ${i_vel} ${i_xsc} ${o_coor} ${o_vel} ${o_xsc} ${o_out} ${o_err} ${o_dcd} ${o_cvd} ${o_xst}'
 
     #
