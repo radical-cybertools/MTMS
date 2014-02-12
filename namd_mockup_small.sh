@@ -1,30 +1,29 @@
 #!/bin/sh
 
 # general
-chr=$1
-loc=$2
-stage=$3
+task=$1
+stage=$2
 # i_conf_du
-i_conf=$4 # 
+i_conf=$3 #
 # i_param_du
-i_pdb=$5
-i_crd=$6
-i_parm=$7
+i_pdb=$4
+i_crd=$5
+i_parm=$6
 # i_stage_du
-i_coor=$8
-i_vel=$9
-i_xsc=${10}
+i_coor=$7
+i_vel=$8
+i_xsc=${9}
 # o_stage_du = ~7M
-o_coor=${11}
-o_vel=${12}
-o_xsc=${13}
+o_coor=${10}
+o_vel=${11}
+o_xsc=${12}
 # o_log_du = 167M
-o_out=${14}
-o_err=${15}
+o_out=${13}
+o_err=${14}
 # o_ana_du = 3.6G
-o_dcd=${16}
-o_cvd=${17}
-o_xst=${18}
+o_dcd=${15}
+o_cvd=${16}
+o_xst=${17}
 
 # Check input file sizes
 if [[ -f $i_conf && `stat --dereference --format=%s $i_conf` -ne 1024 ]]; then
