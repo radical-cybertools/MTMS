@@ -98,85 +98,85 @@ class MultiTaskMultiStage():
                     f = tmp.substitute(TASK=t, STAGE=0)
                     print '### Using input per task all stage file %s' % f
 
-                def construct_task():
-                    print '### Will execute %s' % self.task_executable
+    def construct_task(self, task, stage):
+        print '### Constructing BJA task for task %s stage %s' % (task, stage)
 
-                    # A 'combinator' tasks takes two input files and appends one to the
-                    # other. The first input file 'loreipsum_pt1.txt' is copied from the
-                    # local machine to the executing cluster. The second file is already
-                    # one the remote cluster and is copied locally into the task's
-                    # working directory. The resulting output file is copied back to the
-                    # local machine. The meaning of the arguments are as follows:
-                    #
-                    # * name a name for easier identification
-                    # * cores the number of cores required by this task
-                    # (the default is 1)
-                    # * environment a dictionary of environment variables to set
-                    # in the task's executable environment
-                    # * executable the executable represented by the task
-                    # * arguments a list of arguments passed to the executable
-                    # * input a list of input file transfer directives (dicts)
-                    # * output a list of output file transfer directives (dicts)
-                    #
-                    mtms_task = bigjobasync.Task(
-                        name = "mtms-task-%s" % i,
-                        cores = 1,
-                        executable = os.path.join(WD_PREFIX, 'mtmswf', 'namd-mockup.sh'),
-                        arguments = [
-                            # general
-                            chr,
-                            loc,
-                            stage,
-                            # i_conf_du
-                            os.path.basename(i_conf),
-                            # i_param_du
-                            os.path.basename(i_pdb),
-                            os.path.basename(i_crd),
-                            os.path.basename(i_parm),
-                            # i_stage_du
-                            os.path.basename(i_coor),
-                            os.path.basename(i_vel),
-                            os.path.basename(i_xsc),
-                            # o_stage_du
-                            os.path.basename(o_coor),
-                            os.path.basename(o_vel),
-                            os.path.basename(o_xsc),
-                            # o_log_du
-                            os.path.basename(o_out),
-                            os.path.basename(o_err),
-                            # o_ana_du
-                            os.path.basename(o_dcd),
-                            os.path.basename(o_cvd),
-                            os.path.basename(o_xst)
-                            ],
-                        # transfer input files from the local machine (i.e., the machine
-                        # where this script runs) into the task's workspace on the
-                        # remote machine.
-                        input = [
-                            {
-                                "mode" : bigjobasync.COPY,
-                                "origin" : bigjobasync.LOCAL,
-                                "origin_path" : "/%s/loreipsum_pt1.txt" % os.getcwd(),
-                            },
-                            {
-                                "mode" : bigjobasync.COPY,
-                                "origin" : bigjobasync.LOCAL,
-                                "origin_path" : "/%s/loreipsum_pt2.txt" % os.getcwd(),
-                            }
-                        ],
-                        output = [
-                            {
-                                # transfer the task's output file ('STDOUT') back to the local machine
-                                # (i.e., the machine where this script runs).
-                                "mode" : bigjobasync.COPY,
-                                "origin_path" : "loreipsum-complete-%s.txt" % i,
-                                "destination" : bigjobasync.LOCAL,
-                                "destination_path" : "."
-                            }
-                        ]
-                    )
+        # A 'combinator' tasks takes two input files and appends one to the
+        # other. The first input file 'loreipsum_pt1.txt' is copied from the
+        # local machine to the executing cluster. The second file is already
+        # one the remote cluster and is copied locally into the task's
+        # working directory. The resulting output file is copied back to the
+        # local machine. The meaning of the arguments are as follows:
+        #
+        # * name a name for easier identification
+        # * cores the number of cores required by this task
+        # (the default is 1)
+        # * environment a dictionary of environment variables to set
+        # in the task's executable environment
+        # * executable the executable represented by the task
+        # * arguments a list of arguments passed to the executable
+        # * input a list of input file transfer directives (dicts)
+        # * output a list of output file transfer directives (dicts)
+        #
+        mtms_task = bigjobasync.Task(
+            name = "mtms-task-%s-%s" % (task, stage),
+            cores = 1,
+            executable = os.path.join(WD_PREFIX, 'mtmswf', 'namd-mockup.sh'),
+            arguments = [
+                # general
+                chr,
+                loc,
+                stage,
+                # i_conf_du
+                os.path.basename(i_conf),
+                # i_param_du
+                os.path.basename(i_pdb),
+                os.path.basename(i_crd),
+                os.path.basename(i_parm),
+                # i_stage_du
+                os.path.basename(i_coor),
+                os.path.basename(i_vel),
+                os.path.basename(i_xsc),
+                # o_stage_du
+                os.path.basename(o_coor),
+                os.path.basename(o_vel),
+                os.path.basename(o_xsc),
+                # o_log_du
+                os.path.basename(o_out),
+                os.path.basename(o_err),
+                # o_ana_du
+                os.path.basename(o_dcd),
+                os.path.basename(o_cvd),
+                os.path.basename(o_xst)
+                ],
+            # transfer input files from the local machine (i.e., the machine
+            # where this script runs) into the task's workspace on the
+            # remote machine.
+            input = [
+                {
+                    "mode" : bigjobasync.COPY,
+                    "origin" : bigjobasync.LOCAL,
+                    "origin_path" : "/%s/loreipsum_pt1.txt" % os.getcwd(),
+                },
+                {
+                    "mode" : bigjobasync.COPY,
+                    "origin" : bigjobasync.LOCAL,
+                    "origin_path" : "/%s/loreipsum_pt2.txt" % os.getcwd(),
+                }
+            ],
+            output = [
+                {
+                    # transfer the task's output file ('STDOUT') back to the local machine
+                    # (i.e., the machine where this script runs).
+                    "mode" : bigjobasync.COPY,
+                    "origin_path" : "loreipsum-complete-%s.txt" % i,
+                    "destination" : bigjobasync.LOCAL,
+                    "destination_path" : "."
+                }
+            ]
+        )
 
-                      # Register a callback function with each task. This function will get
+        # Register a callback function with each task. This function will get
         # called everytime the task changes its state. Possible states of a
         # task are:
         #
