@@ -51,7 +51,7 @@ if __name__ == '__main__':
     mtms.tasks = range(NUM_SYSTEMS)
     mtms.stages = range(NUM_STEPS)
     mtms.task_executable = EXECUTABLE
-    mtms.task_arguments = '(chr + loc)/${__TASK__} ${__STAGE__} ${i_conf} ${i_pdb} ${i_crd} ${i_parm} ${i_coor} ${i_vel} ${i_xsc} ${o_coor} ${o_vel} ${o_xsc} ${o_out} ${o_err} ${o_dcd} ${o_cvd} ${o_xst}'
+    mtms.task_arguments = '${__TASK__} ${__STAGE__} ${i_conf} ${i_pdb} ${i_crd} ${i_parm} ${i_coor} ${i_vel} ${i_xsc} ${o_coor} ${o_vel} ${o_xsc} ${o_out} ${o_err} ${o_dcd} ${o_cvd} ${o_xst}'
 
     #
     # INPUTS PER SYSTEM(S), FIRST DYNAMIC STEP(D) ONLY

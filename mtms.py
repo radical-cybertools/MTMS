@@ -46,18 +46,20 @@ class MultiTaskMultiStage():
 
     def __init__(self, resource):
 
-        self.tasks = []
-        self.stages = []
-
+        # Task execution description
         self.task_executable = None
         self.task_arguments = None
 
-        # In the form of { 'label': 'pattern' }
+        # Task "shape" definition
+        self.tasks = []
+        self.stages = []
+
+        # Task I/O specification in the form of { 'label': 'pattern' }
         self.input_per_task_first_stage = {}
         self.input_all_tasks_per_stage = {}
         self.input_per_task_all_stages = {}
         self.output_per_task_per_stage = {}
-        self.intermediate_output_per_task_per_stage = []
+        self.intermediate_output_per_task_per_stage = [] # in the form of [{input_label, output_label, pattern}]
         self.output_per_task_final_stage = {}
 
         # Register a callback function with the resource allocation. This function
