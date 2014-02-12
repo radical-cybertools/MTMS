@@ -224,6 +224,9 @@ class MultiTaskMultiStage():
             for s in self.stages:
                 print '\n##### Performing stage %s for task %s' % (s, t)
 
+                # The __TASK__ and __STAGE__ substitutions are arguably not
+                # required from an application perspective, # but are
+                # certainly useful for development/debugging purposes.
                 task_substitutions = {'__TASK__': t, '__STAGE__': s}
 
                 # Input
