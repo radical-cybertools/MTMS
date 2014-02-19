@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from mtms import MultiTaskMultiStage
+#from mtms import emulate_wf # , execute_wf
+import mtms
 import bigjobasync
 
 ###############################################################################
@@ -34,7 +35,8 @@ if __name__ == '__main__':
     # The simulation time per dynamic step
     TASK_SIM_TIME = 1
     # Executable to run for every task
-    EXECUTABLE = 'namd-mockup.sh'
+    #EXECUTABLE = 'namd-mockup.sh'
+    EXECUTABLE = '/bin/echo'
 
 
     #
@@ -47,11 +49,10 @@ if __name__ == '__main__':
     # Total number of systems to model, paper uses 105
     NUM_SYSTEMS = NUM_CHRS * NUM_LOCS
 
-    mtms = MultiTaskMultiStage(resource)
-    mtms.tasks = range(NUM_SYSTEMS)
-    mtms.stages = range(NUM_STEPS)
-    mtms.task_executable = EXECUTABLE
-    mtms.task_arguments = '${__TASK__} ${__STAGE__} ${i_conf} ${i_pdb} ${i_crd} ${i_parm} ${i_coor} ${i_vel} ${i_xsc} ${o_coor} ${o_vel} ${o_xsc} ${o_out} ${o_err} ${o_dcd} ${o_cvd} ${o_xst}'
+    tasks = range(NUM_SYSTEMS) # Could be any set of "items"
+    num_stages = NUM_STEPS
+    task_executable = EXECUTABLE
+    task_arguments = '${__TASK__} ${__STAGE__} ${i_conf} ${i_pdb} ${i_crd} ${i_parm} ${i_coor} ${i_vel} ${i_xsc} ${o_coor} ${o_vel} ${o_xsc} ${o_out} ${o_err} ${o_dcd} ${o_cvd} ${o_xst}'
 
     #
     # INPUTS PER SYSTEM(S), FIRST DYNAMIC STEP(D) ONLY
@@ -61,7 +62,7 @@ if __name__ == '__main__':
     #     - mineq_xsc[S]
     #
     #
-    mtms.input_per_task_first_stage = {
+    input_per_task_first_stage = {
         'i_coor': 'mineq-${TASK}.coor',
         'i_vel': 'mineq-${TASK}.vel',
         'i_xsc': 'mineq-${TASK}.xsc'
@@ -71,7 +72,7 @@ if __name__ == '__main__':
     # INPUTS PER DYNAMIC STEP(D) FOR ALL SYSTEMS(S) (conf)
     #     - conf_1 .. conf_D
     #
-    mtms.input_all_tasks_per_stage = {
+    input_all_tasks_per_stage = {
         'i_conf': 'dyn-${STAGE}.conf'
     }
 
@@ -82,7 +83,7 @@ if __name__ == '__main__':
     #     - parm[S]
     #     - crc[S]
     #
-    mtms.input_per_task_all_stages = {
+    input_per_task_all_stages = {
         'i_pdb': 'sys-${TASK}.pdb',
         'i_parm': 'sys-${TASK}.parm',
         'i_crd': 'sys-${TASK}.crd'
@@ -97,7 +98,7 @@ if __name__ == '__main__':
     #     - out_1[S] .. out_D[S]
     #     - err_1[S] .. err_D[S]
     #
-    mtms.output_per_task_per_stage = {
+    output_per_task_per_stage = {
         'o_dcd': 'dyn-${TASK}-${STAGE}.dcd',
         'o_cvd': 'dyn-${TASK}-${STAGE}.cvd',
         'o_xst': 'dyn-${TASK}-${STAGE}.xst',
@@ -113,7 +114,7 @@ if __name__ == '__main__':
     #     - xsc_1[S] .. xsc_D[S]
     #
     # TODO: rename to intermediate without "output" ?
-    mtms.intermediate_output_per_task_per_stage = [
+    intermediate_output_per_task_per_stage = [
         {'input_label': 'i_coor', 'output_label': 'o_coor', 'pattern': 'dyn-${TASK}-${STAGE}.coor'},
         {'input_label': 'i_vel', 'output_label': 'o_vel', 'pattern': 'dyn-${TASK}-${STAGE}.vel'},
         {'input_label': 'i_xsc', 'output_label': 'o_xsc', 'pattern': 'dyn-${TASK}-${STAGE}.xsc'}
@@ -126,14 +127,43 @@ if __name__ == '__main__':
     #     - vel[S]
     #     - xsc[S]
     #
-    mtms.output_per_task_final_stage = {
+    output_per_task_final_stage = {
         'o_coor': 'dyn-${TASK}-${STAGE}.coor',
         'o_vel': 'dyn-${TASK}-${STAGE}.vel',
         'o_xsc': 'dyn-${TASK}-${STAGE}.xsc'
     }
 
-    mtms.emulate()
-    #mtms.execute()
+    # mtms.emulate_wf(
+    #     # Task execution description
+    #     EXECUTABLE,
+    #     task_arguments,
+    #     # Task "shape" definition
+    #     tasks,
+    #     num_stages,
+    #     # Task I/O specification in the form of { 'label': 'pattern' }
+    #     input_per_task_first_stage,
+    #     input_all_tasks_per_stage,
+    #     input_per_task_all_stages,
+    #     output_per_task_per_stage,
+    #     intermediate_output_per_task_per_stage, # in the form of [{input_label, output_label, pattern}]
+    #     output_per_task_final_stage
+    # )
+    mtms.execute_wf(
+        resource,
+        # Task execution description
+        EXECUTABLE,
+        task_arguments,
+        # Task "shape" definition
+        tasks,
+        num_stages,
+        # Task I/O specification in the form of { 'label': 'pattern' }
+        input_per_task_first_stage,
+        input_all_tasks_per_stage,
+        input_per_task_all_stages,
+        output_per_task_per_stage,
+        intermediate_output_per_task_per_stage, # in the form of [{input_label, output_label, pattern}]
+        output_per_task_final_stage
+    )
 
 #
 ###############################################################################

@@ -4,289 +4,319 @@ from string import Template
 
 import bigjobasync
 
+glob_num_stages = None
+glob_task_executable = None
+glob_task_arguments = None
 
-class MultiTaskMultiStage():
+# ----------------------------------------------------------------------------
+#
+def resource_cb(origin, old_state, new_state):
+    """Resource callback function: writes resource allocation state
+changes to STDERR.
 
-    # ----------------------------------------------------------------------------
-    #
-    def resource_cb(self, origin, old_state, new_state):
-        """Resource callback function: writes resource allocation state
-    changes to STDERR.
+It aborts the script script with exit code '-1' if the resource
+allocation state is 'FAILED'.
 
-    It aborts the script script with exit code '-1' if the resource
-    allocation state is 'FAILED'.
+(Obviously, more logic can be built into the callback function, for
+example fault tolerance.)
+"""
+    msg = " * Resource '%s' state changed from '%s' to '%s'.\n" % \
+          (str(origin), old_state, new_state)
+    sys.stderr.write(msg)
 
-    (Obviously, more logic can be built into the callback function, for
-    example fault tolerance.)
-    """
-        msg = " * Resource '%s' state changed from '%s' to '%s'.\n" % \
-              (str(origin), old_state, new_state)
-        sys.stderr.write(msg)
+    if new_state == bigjobasync.FAILED:
+        # Print the log and exit if big job has failed
+        for entry in origin.log:
+            print " * LOG: %s" % entry
+        sys.stderr.write(" * EXITING.\n")
+        sys.exit(-1)
 
-        if new_state == bigjobasync.FAILED:
-            # Print the log and exit if big job has failed
-            for entry in origin.log:
-                print " * LOG: %s" % entry
-            sys.stderr.write(" * EXITING.\n")
-            sys.exit(-1)
+# ----------------------------------------------------------------------------
+#
+def task_cb(origin, old_state, new_state):
+    """Task callback function: writes task state changes to STDERR
+"""
+    msg = " * Task %s state changed from '%s' to '%s'.\n" % \
+          (str(origin), old_state, new_state)
+    sys.stderr.write(msg)
 
-    # ----------------------------------------------------------------------------
-    #
-    def task_cb(self, origin, old_state, new_state):
-        """Task callback function: writes task state changes to STDERR
-    """
-        msg = " * Task %s state changed from '%s' to '%s'.\n" % \
-              (str(origin), old_state, new_state)
-        sys.stderr.write(msg)
+    if new_state == bigjobasync.FAILED:
+        # Print the log entry if task has failed to run
+        for entry in origin.log:
+            print " LOG: %s" % entry
 
-        if new_state == bigjobasync.FAILED:
-            # Print the log entry if task has failed to run
-            for entry in origin.log:
-                print " LOG: %s" % entry
 
-    def __init__(self, resource):
 
+
+
+
+def execute_wf(
+        # Resource configuration
+        resource=None,
         # Task execution description
-        self.task_executable = None
-        self.task_arguments = None
-
+        task_executable=None,
+        task_arguments=None,
         # Task "shape" definition
-        self.tasks = []
-        self.stages = []
-
+        tasks=None,
+        num_stages=1,
         # Task I/O specification in the form of { 'label': 'pattern' }
-        self.input_per_task_first_stage = {}
-        self.input_all_tasks_per_stage = {}
-        self.input_per_task_all_stages = {}
-        self.output_per_task_per_stage = {}
-        self.intermediate_output_per_task_per_stage = [] # in the form of [{input_label, output_label, pattern}]
-        self.output_per_task_final_stage = {}
+        input_per_task_first_stage={},
+        input_all_tasks_per_stage={},
+        input_per_task_all_stages={},
+        output_per_task_per_stage={},
+        intermediate_output_per_task_per_stage=[], # in the form of [{input_label, output_label, pattern}]
+        output_per_task_final_stage={}):
 
-        # Register a callback function with the resource allocation. This function
-        # will get called every time the big job changes its state. Possible states
-        # of a resource allocation are:
-        #
-        # * NEW (just created)
-        # * PENDING (pilot waiting to get scheduled by the system)
-        # * RUNNING (pilot executing on the resource)
-        # * DONE (pilot successfully finished execution)
-        # * FAILED (an error occurred during pilot execution)
-        #
-        resource.register_callbacks(self.resource_cb)
-        # If terminate_on_empty_queue=True, the resource will be shut down as soon
-        # as the last task has finished.
-        resource.allocate(terminate_on_empty_queue=True)
+    global glob_num_stages, glob_task_executable, glob_task_arguments, glob_input_per_task_first_stage,\
+        glob_input_all_tasks_per_stage, glob_input_per_task_all_stages, glob_output_per_task_per_stage,\
+        glob_intermediate_output_per_task_per_stage, glob_output_per_task_final_stage
 
-    def execute(self):
+    glob_num_stages= num_stages
+    glob_task_executable = task_executable
+    glob_task_arguments = task_arguments
+    glob_input_per_task_first_stage =  input_per_task_first_stage
+    glob_input_all_tasks_per_stage =  input_all_tasks_per_stage
+    glob_input_per_task_all_stages = input_per_task_all_stages
+    glob_output_per_task_per_stage = output_per_task_per_stage
+    glob_intermediate_output_per_task_per_stage = intermediate_output_per_task_per_stage
+    glob_output_per_task_final_stage = output_per_task_final_stage
 
-        for t in self.tasks:
-                print '\n##### Performing initial stage for task %s' % t
+    # Register a callback function with the resource allocation. This function
+    # will get called every time the big job changes its state. Possible states
+    # of a resource allocation are:
+    #
+    # * NEW (just created)
+    # * PENDING (pilot waiting to get scheduled by the system)
+    # * RUNNING (pilot executing on the resource)
+    # * DONE (pilot successfully finished execution)
+    # * FAILED (an error occurred during pilot execution)
+    #
+    resource.register_callbacks(resource_cb)
+    # If terminate_on_empty_queue=True, the resource will be shut down as soon
+    # as the last task has finished.
+    resource.allocate(terminate_on_empty_queue=True)
 
-                # Input
-                for f in self.input_per_task_first_stage:
-                    tmp = Template(f)
-                    f = tmp.substitute(TASK=t, STAGE=0)
-                    print '### Using initial input file %s' % f
+    stage0_tasks = []
+    stage = 0
 
-                for f in self.input_all_tasks_per_stage:
-                    tmp = Template(f)
-                    f = tmp.substitute(TASK=t, STAGE=0)
-                    print '### Using input all task per stage file %s' % f
+    for task in tasks:
+        print '\n##### Performing initial stage for task %s' % task
 
-                for f in self.input_per_task_all_stages:
-                    tmp = Template(f)
-                    f = tmp.substitute(TASK=t, STAGE=0)
-                    print '### Using input per task all stage file %s' % f
-
-    def construct_task(self, task, stage):
-        print '### Constructing BJA task for task %s stage %s' % (task, stage)
-
-        # A 'combinator' tasks takes two input files and appends one to the
-        # other. The first input file 'loreipsum_pt1.txt' is copied from the
-        # local machine to the executing cluster. The second file is already
-        # one the remote cluster and is copied locally into the task's
-        # working directory. The resulting output file is copied back to the
-        # local machine. The meaning of the arguments are as follows:
-        #
-        # * name a name for easier identification
-        # * cores the number of cores required by this task
-        # (the default is 1)
-        # * environment a dictionary of environment variables to set
-        # in the task's executable environment
-        # * executable the executable represented by the task
-        # * arguments a list of arguments passed to the executable
-        # * input a list of input file transfer directives (dicts)
-        # * output a list of output file transfer directives (dicts)
-        #
-        mtms_task = bigjobasync.Task(
-            name = "mtms-task-%s-%s" % (task, stage),
-            cores = 1,
-            executable = os.path.join(WD_PREFIX, 'mtmswf', 'namd-mockup.sh'),
-            arguments = [
-                # general
-                chr,
-                loc,
-                stage,
-                # i_conf_du
-                os.path.basename(i_conf),
-                # i_param_du
-                os.path.basename(i_pdb),
-                os.path.basename(i_crd),
-                os.path.basename(i_parm),
-                # i_stage_du
-                os.path.basename(i_coor),
-                os.path.basename(i_vel),
-                os.path.basename(i_xsc),
-                # o_stage_du
-                os.path.basename(o_coor),
-                os.path.basename(o_vel),
-                os.path.basename(o_xsc),
-                # o_log_du
-                os.path.basename(o_out),
-                os.path.basename(o_err),
-                # o_ana_du
-                os.path.basename(o_dcd),
-                os.path.basename(o_cvd),
-                os.path.basename(o_xst)
-                ],
-            # transfer input files from the local machine (i.e., the machine
-            # where this script runs) into the task's workspace on the
-            # remote machine.
-            input = [
-                {
-                    "mode" : bigjobasync.COPY,
-                    "origin" : bigjobasync.LOCAL,
-                    "origin_path" : "/%s/loreipsum_pt1.txt" % os.getcwd(),
-                },
-                {
-                    "mode" : bigjobasync.COPY,
-                    "origin" : bigjobasync.LOCAL,
-                    "origin_path" : "/%s/loreipsum_pt2.txt" % os.getcwd(),
-                }
-            ],
-            output = [
-                {
-                    # transfer the task's output file ('STDOUT') back to the local machine
-                    # (i.e., the machine where this script runs).
-                    "mode" : bigjobasync.COPY,
-                    "origin_path" : "loreipsum-complete-%s.txt" % i,
-                    "destination" : bigjobasync.LOCAL,
-                    "destination_path" : "."
-                }
-            ]
-        )
+        mtms_task = construct_bja_task(task, stage)
 
         # Register a callback function with each task. This function will get
-        # called everytime the task changes its state. Possible states of a
-        # task are:
-        #
-        # * NEW (task just created)
-        # * TRANSFERRING_INPUT (task transferring input data)
-        # * WAITING_FOR_EXECUTION (task waiting to get submitted)
-        # * PENDING (task submitted, waiting to get executed)
-        # * RUNNING (task executing on the resource)
-        # * TRANSFERRING_OUTPUT (task transferring output data)
-        # * DONE (task successfully finished execution)
-        # * FAILED (error during transfer or execution)
-        #
+        # called every time the task changes its state.
+        mtms_task.register_callbacks(task_cb)
 
-        #combinator_task.register_callbacks(self.task_cb)
-        #all_tasks.append(combinator_task)
+        # Put it on the list of initial tasks to execute
+        stage0_tasks.append(mtms_task)
 
-        # Submit all tasks to stampede
-        #stampede.schedule_tasks(all_tasks)
+    # Submit all tasks to the resource
+    resource.schedule_tasks(stage0_tasks)
 
-                for f in self.output_per_task_per_stage:
-                    tmp = Template(f)
-                    f = tmp.substitute(TASK=t, STAGE=s)
-                    print '### Using output per task per stage file %s' % f
+    # Wait for the execution of the workflow
+    resource.wait()
 
-                if s != self.stages[-1]:
-                    for f in self.intermediate_output_per_task_per_stage:
-                        tmp = Template(f)
-                        f = tmp.substitute(TASK=t, STAGE=s)
-                        print '### Using intermediate output per task per stage file %s' % f
 
-                if s == self.stages[-1]:
-                    for f in self.output_per_task_final_stage:
-                        tmp = Template(f)
-                        f = tmp.substitute(TASK=t, STAGE=s)
-                        print '### Using output per task final stage file %s' % f
+def construct_bja_task(task=None, stage=None):
 
-        # For intermediate stages
-        #if s != self.stages[0]:
-        #    for f in self.intermediate_per_task_per_stage:
-        #        tmp = Template(f)
-        #        f = tmp.substitute(TASK=t, STAGE=s-1)
-        #        print '### Reading intermediate per task per stage file %s' % f
+    print '### Constructing BJA task for task %s stage %s' % (task, stage)
 
-    def emulate(self):
+    # The __TASK__ and __STAGE__ substitutions are arguably not
+    # required from an application perspective, # but are
+    # certainly useful for development/debugging purposes.
+    task_substitutions = {'__TASK__': task, '__STAGE__': stage}
 
-        for t in self.tasks:
-            for s in self.stages:
-                print '\n##### Performing stage %s for task %s' % (s, t)
+    for label, pattern in glob_input_per_task_first_stage.items():
+        tmp = Template(pattern)
+        filename = tmp.substitute(TASK=task, STAGE=stage)
+        print '### Using initial input file %s as %s' % (filename, label)
+        task_substitutions[label] = filename
 
-                # The __TASK__ and __STAGE__ substitutions are arguably not
-                # required from an application perspective, # but are
-                # certainly useful for development/debugging purposes.
-                task_substitutions = {'__TASK__': t, '__STAGE__': s}
+    for label, pattern in glob_input_all_tasks_per_stage.items():
+        tmp = Template(pattern)
+        filename = tmp.substitute(TASK=task, STAGE=stage)
+        print '### Using all task per stage input file %s as %s' % (filename, label)
+        task_substitutions[label] = filename
 
-                # Input
-                if s == self.stages[0]:
-                    for label, pattern in self.input_per_task_first_stage.items():
-                        tmp = Template(pattern)
-                        filename = tmp.substitute(TASK=t, STAGE=s)
-                        print '### Using initial input file %s as %s' % (filename, label)
-                        task_substitutions[label] = filename
+    if stage != glob_num_stages-1:
+        for entry in glob_intermediate_output_per_task_per_stage:
+            tmp = Template(entry['pattern'])
+            filename = tmp.substitute(TASK=task, STAGE=stage-1)
+            label = entry['input_label']
+            print '### Using intermediate per task per stage input file %s as %s' % (filename, label)
+            task_substitutions[label] = filename
 
-                for label, pattern in self.input_all_tasks_per_stage.items():
+    for label, pattern in glob_input_per_task_all_stages.items():
+        tmp = Template(pattern)
+        filename = tmp.substitute(TASK=task, STAGE=stage)
+        print '### Using per task all stage input file %s as %s' % (filename, label)
+        task_substitutions[label] = filename
+
+    for label, pattern in glob_output_per_task_per_stage.items():
+        tmp = Template(pattern)
+        filename = tmp.substitute(TASK=task, STAGE=stage)
+        print '### Using per task per stage ouput file %s as %s' % (filename, label)
+        task_substitutions[label] = filename
+
+    if stage != glob_num_stages-1: # If not the latest stage
+        for entry in glob_intermediate_output_per_task_per_stage:
+            tmp = Template(entry['pattern'])
+            filename = tmp.substitute(TASK=task, STAGE=stage)
+            label = entry['output_label']
+            print '### Using intermediate per task per stage output file %s as %s' % (filename, label)
+            task_substitutions[label] = filename
+
+    if stage == glob_num_stages-1: # If this is the (first and) last step
+        for label, pattern in glob_output_per_task_final_stage.items():
+            tmp = Template(pattern)
+            filename = tmp.substitute(TASK=task, STAGE=stage)
+            print '### Using per task final stage output file %s as %s' % (filename, label)
+            task_substitutions[label] = filename
+
+    if glob_task_executable:
+        if not glob_task_arguments:
+            print '### Will execute "%s"' % glob_task_executable
+            arguments = None
+        else:
+            tmp = Template(glob_task_arguments)
+            arguments = tmp.substitute(task_substitutions)
+            print '### Will execute "%s %s"' % (glob_task_executable, arguments)
+    else:
+        print '### ERROR: Executable not specified!!'
+
+    #
+    # The meaning of the arguments are as follows:
+    #
+    # * name: a name for easier identification in the task's executable environment
+    # * executable: the executable represented by the task
+    # * arguments: a list of arguments passed to the executable
+    # * environment: a dictionary of environment variables to set
+    # * input: a list of input file transfer directives (dicts)
+    # * output: a list of output file transfer directives (dicts)
+    # * cores: the number of cores required by this task (the default is 1)
+
+    # Name
+    bja_name = "mtms-task-%s-%s" % (task, stage)
+
+    # Executable
+    bja_executable = glob_task_executable
+
+    # Arguments
+    if arguments:
+        bja_arguments = arguments
+    else:
+        bja_arguments = []
+
+    # Environment
+    bja_environment = {}
+
+    # Input
+    bja_input = []
+
+    # Output
+    bja_output = []
+
+    # Cores
+    bja_cores = 1
+
+    mtms_task = bigjobasync.Task(
+        name = bja_name,
+        executable = bja_executable,
+        arguments = bja_arguments,
+        environment=bja_environment,
+        input = bja_input,
+        output = bja_output,
+        cores = bja_cores
+    )
+
+    return mtms_task
+
+def emulate_wf(
+            # Task execution description
+            task_executable=None,
+            task_arguments=None,
+            # Task "shape" definition
+            tasks=None,
+            num_stages=1,
+            # Task I/O specification in the form of { 'label': 'pattern' }
+            input_per_task_first_stage={},
+            input_all_tasks_per_stage={},
+            input_per_task_all_stages={},
+            output_per_task_per_stage={},
+            intermediate_output_per_task_per_stage=[], # in the form of [{input_label, output_label, pattern}]
+            output_per_task_final_stage={}):
+
+    global glob_num_stages, glob_task_executable, glob_task_arguments
+    glob_num_stages= num_stages
+    glob_task_executable = task_executable
+    glob_task_arguments = task_arguments
+
+    for t in tasks:
+        for s in range(num_stages):
+            print '\n##### Performing stage %s for task %s' % (s, t)
+
+            # The __TASK__ and __STAGE__ substitutions are arguably not
+            # required from an application perspective, # but are
+            # certainly useful for development/debugging purposes.
+            task_substitutions = {'__TASK__': t, '__STAGE__': s}
+
+            # Input
+            if s == 0:
+                for label, pattern in input_per_task_first_stage.items():
                     tmp = Template(pattern)
                     filename = tmp.substitute(TASK=t, STAGE=s)
-                    print '### Using all task per stage input file %s as %s' % (filename, label)
+                    print '### Using initial input file %s as %s' % (filename, label)
                     task_substitutions[label] = filename
 
-                if s != self.stages[0]:
-                    for entry in self.intermediate_output_per_task_per_stage:
-                        tmp = Template(entry['pattern'])
-                        filename = tmp.substitute(TASK=t, STAGE=s-1)
-                        label = entry['input_label']
-                        print '### Using intermediate per task per stage input file %s as %s' % (filename, label)
-                        task_substitutions[label] = filename
+            for label, pattern in input_all_tasks_per_stage.items():
+                tmp = Template(pattern)
+                filename = tmp.substitute(TASK=t, STAGE=s)
+                print '### Using all task per stage input file %s as %s' % (filename, label)
+                task_substitutions[label] = filename
 
-                for label, pattern in self.input_per_task_all_stages.items():
+            if s != 0:
+                for entry in intermediate_output_per_task_per_stage:
+                    tmp = Template(entry['pattern'])
+                    filename = tmp.substitute(TASK=t, STAGE=s-1)
+                    label = entry['input_label']
+                    print '### Using intermediate per task per stage input file %s as %s' % (filename, label)
+                    task_substitutions[label] = filename
+
+            for label, pattern in input_per_task_all_stages.items():
+                tmp = Template(pattern)
+                filename = tmp.substitute(TASK=t, STAGE=s)
+                print '### Using per task all stage input file %s as %s' % (filename, label)
+                task_substitutions[label] = filename
+
+            for label, pattern in output_per_task_per_stage.items():
+                tmp = Template(pattern)
+                filename = tmp.substitute(TASK=t, STAGE=s)
+                print '### Using per task per stage ouput file %s as %s' % (filename, label)
+                task_substitutions[label] = filename
+
+            if s != num_stages-1:
+                for entry in intermediate_output_per_task_per_stage:
+                    tmp = Template(entry['pattern'])
+                    filename = tmp.substitute(TASK=t, STAGE=s)
+                    label = entry['output_label']
+                    print '### Using intermediate per task per stage output file %s as %s' % (filename, label)
+                    task_substitutions[label] = filename
+
+            if s == num_stages-1:
+                for label, pattern in output_per_task_final_stage.items():
                     tmp = Template(pattern)
                     filename = tmp.substitute(TASK=t, STAGE=s)
-                    print '### Using per task all stage input file %s as %s' % (filename, label)
+                    print '### Using per task final stage output file %s as %s' % (filename, label)
                     task_substitutions[label] = filename
 
-                for label, pattern in self.output_per_task_per_stage.items():
-                    tmp = Template(pattern)
-                    filename = tmp.substitute(TASK=t, STAGE=s)
-                    print '### Using per task per stage ouput file %s as %s' % (filename, label)
-                    task_substitutions[label] = filename
-
-                if s != self.stages[-1]:
-                    for entry in self.intermediate_output_per_task_per_stage:
-                        tmp = Template(entry['pattern'])
-                        filename = tmp.substitute(TASK=t, STAGE=s)
-                        label = entry['output_label']
-                        print '### Using intermediate per task per stage output file %s as %s' % (filename, label)
-                        task_substitutions[label] = filename
-
-                if s == self.stages[-1]:
-                    for label, pattern in self.output_per_task_final_stage.items():
-                        tmp = Template(pattern)
-                        filename = tmp.substitute(TASK=t, STAGE=s)
-                        print '### Using per task final stage output file %s as %s' % (filename, label)
-                        task_substitutions[label] = filename
-
-                if self.task_executable:
-                    if not self.task_arguments:
-                        print '### Will execute "%s"' % self.task_executable
-                    else:
-                        tmp = Template(self.task_arguments)
-                        arguments = tmp.substitute(task_substitutions)
-                        print '### Will execute "%s %s"' % (self.task_executable, arguments)
+            if task_executable:
+                if not glob_task_arguments:
+                    print '### Will execute "%s"' % task_executable
                 else:
-                    print '### ERROR: Executable not specified!!'
+                    tmp = Template(glob_task_arguments)
+                    arguments = tmp.substitute(task_substitutions)
+                    print '### Will execute "%s %s"' % (task_executable, arguments)
+            else:
+                print '### ERROR: Executable not specified!!'
 
