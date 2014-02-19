@@ -8,6 +8,8 @@ glob_num_stages = None
 glob_task_executable = None
 glob_task_arguments = None
 
+task_repo = {}
+
 # ----------------------------------------------------------------------------
 #
 def resource_cb(origin, old_state, new_state):
@@ -45,9 +47,7 @@ def task_cb(origin, old_state, new_state):
         for entry in origin.log:
             print " LOG: %s" % entry
 
-
-
-
+    print 'Task repo inside task_cb:', task_repo
 
 
 def execute_wf(
@@ -70,6 +70,8 @@ def execute_wf(
     global glob_num_stages, glob_task_executable, glob_task_arguments, glob_input_per_task_first_stage,\
         glob_input_all_tasks_per_stage, glob_input_per_task_all_stages, glob_output_per_task_per_stage,\
         glob_intermediate_output_per_task_per_stage, glob_output_per_task_final_stage
+
+    global task_repo
 
     glob_num_stages= num_stages
     glob_task_executable = task_executable
@@ -110,6 +112,9 @@ def execute_wf(
 
         # Put it on the list of initial tasks to execute
         stage0_tasks.append(mtms_task)
+
+        task_repo[mtms_task.name] = {'task': mtms_task, 'stage': stage}
+        print 'task repo inside execute_wf:', task_repo
 
     # Submit all tasks to the resource
     resource.schedule_tasks(stage0_tasks)
