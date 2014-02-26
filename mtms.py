@@ -2,36 +2,52 @@ import sys
 import os
 from string import Template
 
-import bigjobasync
+import sagapilot
 
 glob_num_stages = None
 glob_task_executable = None
 glob_task_arguments = None
 
+
+# DBURL points to a MongoDB server. For installation of a MongoDB server, please
+# refer to the MongoDB website: http://docs.mongodb.org/manual/installation/
+DBURL  = "mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017"
+
 task_repo = {}
 
 # ----------------------------------------------------------------------------
 #
-def resource_cb(origin, old_state, new_state):
-    """Resource callback function: writes resource allocation state
-changes to STDERR.
+# def resource_cb(origin, old_state, new_state):
+#     """Resource callback function: writes resource allocation state
+# changes to STDERR.
+#
+# It aborts the script script with exit code '-1' if the resource
+# allocation state is 'FAILED'.
+#
+# (Obviously, more logic can be built into the callback function, for
+# example fault tolerance.)
+# """
+#     msg = " * Resource '%s' state changed from '%s' to '%s'.\n" % \
+#           (str(origin), old_state, new_state)
+#     sys.stderr.write(msg)
+#
+#     if new_state == bigjobasync.FAILED:
+#         # Print the log and exit if big job has failed
+#         for entry in origin.log:
+#             print " * LOG: %s" % entry
+#         sys.stderr.write(" * EXITING.\n")
+#         sys.exit(-1)
 
-It aborts the script script with exit code '-1' if the resource
-allocation state is 'FAILED'.
+def pilot_state_change_cb(pilot_uid, state):
+    """pilot_state_change_cb is a callback function. It handles ComputePilot
+    state changes.
+    """
+    print "[Callback]: ComputePilot '{0}' state changed to {1}.".format(pilot_uid, state)
 
-(Obviously, more logic can be built into the callback function, for
-example fault tolerance.)
-"""
-    msg = " * Resource '%s' state changed from '%s' to '%s'.\n" % \
-          (str(origin), old_state, new_state)
-    sys.stderr.write(msg)
-
-    if new_state == bigjobasync.FAILED:
-        # Print the log and exit if big job has failed
-        for entry in origin.log:
-            print " * LOG: %s" % entry
-        sys.stderr.write(" * EXITING.\n")
-        sys.exit(-1)
+def unit_state_change_cb(unit_uid, state):
+    """ Callback for units.
+    """
+    print "[Callback]: Unit '{0}' state changed to {1}.".format(unit_uid, state)
 
 # ----------------------------------------------------------------------------
 #
@@ -83,22 +99,42 @@ def execute_wf(
     glob_intermediate_output_per_task_per_stage = intermediate_output_per_task_per_stage
     glob_output_per_task_final_stage = output_per_task_final_stage
 
-    # Register a callback function with the resource allocation. This function
-    # will get called every time the big job changes its state. Possible states
-    # of a resource allocation are:
-    #
-    # * NEW (just created)
-    # * PENDING (pilot waiting to get scheduled by the system)
-    # * RUNNING (pilot executing on the resource)
-    # * DONE (pilot successfully finished execution)
-    # * FAILED (an error occurred during pilot execution)
-    #
-    resource.register_callbacks(resource_cb)
-    # If terminate_on_empty_queue=True, the resource will be shut down as soon
-    # as the last task has finished.
-    resource.allocate(terminate_on_empty_queue=True)
 
-    stage0_tasks = []
+    # Create a new session. A session is a set of Pilot Managers
+    # and Unit Managers (with associated Pilots and ComputeUnits).
+    session = sagapilot.Session(database_url=DBURL)
+    print "Session UID      : {0} ".format(session.uid)
+
+    # Add a Pilot Manager
+    pmgr = sagapilot.PilotManager(session=session)
+    print "PilotManager UID : {0} ".format( pmgr.uid )
+
+
+    # Define a 2-core local pilot in /tmp/sagapilot.sandbox that runs  for 10 minutes.
+    pdesc = sagapilot.ComputePilotDescription()
+    pdesc.resource  = "localhost"
+    pdesc.runtime   = 15 # minutes
+    pdesc.cores     = 2
+
+    # Launch the pilot.
+    pilot = pmgr.submit_pilots(pdesc)
+    print "Pilot UID        : {0} ".format( pilot.uid )
+
+    # Register callbacks for pilot state changes
+    #pilot.register_state_callback(pilot_state_change_cb)
+    pmgr.register_callback(pilot_state_change_cb)
+
+    # Combine the ComputePilot, the workload and a scheduler via # a UnitManager object.
+    umgr = sagapilot.UnitManager( session=session, scheduler=sagapilot.SCHED_DIRECT_SUBMISSION)
+    print "UnitManager UID  : {0} ".format( umgr.uid )
+
+    # Register callbacks for unit state changes
+    umgr.register_callback(unit_state_change_cb)
+
+     # Add the previsouly created ComputePilot to the UnitManager.
+    umgr.add_pilots(pilot)
+
+    stage0_cus = []
     stage = 0
 
     for task in tasks:
@@ -106,22 +142,34 @@ def execute_wf(
 
         mtms_task = construct_bja_task(task, stage)
 
-        # Register a callback function with each task. This function will get
-        # called every time the task changes its state.
-        mtms_task.register_callbacks(task_cb)
-
         # Put it on the list of initial tasks to execute
-        stage0_tasks.append(mtms_task)
+        stage0_cus.append(mtms_task)
 
         task_repo[mtms_task.name] = {'task': mtms_task, 'stage': stage}
         print 'task repo inside execute_wf:', task_repo
 
-    # Submit all tasks to the resource
-    resource.schedule_tasks(stage0_tasks)
 
-    # Wait for the execution of the workflow
-    resource.wait()
+    # Submit the previously created ComputeUnit descriptions to the
+    # PilotManager. This will trigger the selected scheduler to start
+    # assigning ComputeUnits to the ComputePilots.
+    umgr.submit_units(stage0_cus)
 
+    # Wait for all compute units to finish.
+    umgr.wait_units()
+
+    for unit in umgr.get_units():
+        # Print some information about the unit.
+        print "{0}".format(str(unit))
+
+        # Get the stdout and stderr streams of the ComputeUnit.
+        print "  STDOUT: {0}".format(unit.stdout)
+        print "  STDERR: {0}".format(unit.stderr)
+
+    # Cancel all pilots.
+    pmgr.cancel_pilots()
+
+    # Remove session from database
+    session.destroy()
 
 def construct_bja_task(task=None, stage=None):
 
@@ -190,52 +238,34 @@ def construct_bja_task(task=None, stage=None):
     else:
         print '### ERROR: Executable not specified!!'
 
-    #
-    # The meaning of the arguments are as follows:
-    #
-    # * name: a name for easier identification in the task's executable environment
-    # * executable: the executable represented by the task
-    # * arguments: a list of arguments passed to the executable
-    # * environment: a dictionary of environment variables to set
-    # * input: a list of input file transfer directives (dicts)
-    # * output: a list of output file transfer directives (dicts)
-    # * cores: the number of cores required by this task (the default is 1)
+    cu = sagapilot.ComputeUnitDescription()
 
     # Name
-    bja_name = "mtms-task-%s-%s" % (task, stage)
+    cu.name = "mtms-task-%s-%s" % (task, stage)
 
     # Executable
-    bja_executable = glob_task_executable
+    cu.executable = glob_task_executable
 
     # Arguments
     if arguments:
-        bja_arguments = arguments
-    else:
-        bja_arguments = []
+        cu.arguments = arguments
 
     # Environment
-    bja_environment = {}
+    #cu.environment =  {}
 
     # Input
-    bja_input = []
+    #cu.input_data  = [ "./file1.dat   > file1.dat",
+    #                "./file2.dat   > file2.dat" ]
+    #input = bja_input
 
     # Output
-    bja_output = []
+    #cu.output_data = [ "result-%s.dat < STDOUT" % unit_count]
+    #output = bja_output,
 
     # Cores
-    bja_cores = 1
+    cu.cores  =  1
 
-    mtms_task = bigjobasync.Task(
-        name = bja_name,
-        executable = bja_executable,
-        arguments = bja_arguments,
-        environment=bja_environment,
-        input = bja_input,
-        output = bja_output,
-        cores = bja_cores
-    )
-
-    return mtms_task
+    return cu
 
 def emulate_wf(
             # Task execution description

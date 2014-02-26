@@ -2,7 +2,7 @@
 
 #from mtms import emulate_wf # , execute_wf
 import mtms
-import bigjobasync
+#import bigjobasync
 
 ###############################################################################
 #
@@ -13,14 +13,15 @@ if __name__ == '__main__':
     #
     # Resource configuration
     #
-    resource = bigjobasync.Resource(
-        name = "india",
-        resource = bigjobasync.RESOURCES['FUTUREGRID.INDIA'],
-        username = 'marksant',
-        runtime = 5,
-        cores = 8,
-        workdir = '/N/u/marksant/bja'
-    )
+    #resource = bigjobasync.Resource(
+    #    name = "india",
+    #    resource = bigjobasync.RESOURCES['FUTUREGRID.INDIA'],
+    #    username = 'marksant',
+    #    runtime = 5,
+    #    cores = 8,
+    #    workdir = '/N/u/marksant/bja'
+    #)
+    resource = {}
 
     #
     # Application specific runtime characteristics
