@@ -4,16 +4,38 @@ from string import Template
 
 import sagapilot
 
-glob_num_stages = None
-glob_task_executable = None
-glob_task_arguments = None
-
-
 # DBURL points to a MongoDB server. For installation of a MongoDB server, please
 # refer to the MongoDB website: http://docs.mongodb.org/manual/installation/
-DBURL  = "mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017"
+#DBURL  = "mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017"
+DBURL  = "mongodb://localhost:27017"
 
 task_repo = {}
+
+class Task_Description():
+    def __init__(self):
+
+        # Task execution description
+        self.executable = None
+        self.arguments = None
+        self.num_cores = 1
+        self.environment = {}
+
+        # Task "shape" definition
+        self.tasks = None # List of elements / TODO: NEED A BETTER NAME!!
+        self.num_stages = 1
+
+class IO_Description():
+    def __init__(self):
+        # Task I/O specification in the form of { 'label': 'pattern' }
+        self.input_per_task_first_stage={}
+        self.input_all_tasks_per_stage={}
+        self.input_per_task_all_stages={}
+
+        self.output_per_task_per_stage={}
+        self.output_per_task_final_stage={}
+
+        # Intermediate in the form of [{input_label, output_label, pattern}]
+        self.intermediate_output_per_task_per_stage=[]
 
 def pilot_state_change_cb(pilot, state):
     """pilot_state_change_cb is a callback function. It handles ComputePilot
@@ -26,39 +48,7 @@ def unit_state_change_cb(unit, state):
     """
     print "[Callback]: Unit '{0}' state changed to {1}.".format(unit, state)
 
-def execute_wf(
-        # Resource configuration
-        resource=None,
-        # Task execution description
-        task_executable=None,
-        task_arguments=None,
-        # Task "shape" definition
-        tasks=None,
-        num_stages=1,
-        # Task I/O specification in the form of { 'label': 'pattern' }
-        input_per_task_first_stage={},
-        input_all_tasks_per_stage={},
-        input_per_task_all_stages={},
-        output_per_task_per_stage={},
-        intermediate_output_per_task_per_stage=[], # in the form of [{input_label, output_label, pattern}]
-        output_per_task_final_stage={}):
-
-    global glob_num_stages, glob_task_executable, glob_task_arguments, glob_input_per_task_first_stage,\
-        glob_input_all_tasks_per_stage, glob_input_per_task_all_stages, glob_output_per_task_per_stage,\
-        glob_intermediate_output_per_task_per_stage, glob_output_per_task_final_stage
-
-    global task_repo
-
-    glob_num_stages= num_stages
-    glob_task_executable = task_executable
-    glob_task_arguments = task_arguments
-    glob_input_per_task_first_stage =  input_per_task_first_stage
-    glob_input_all_tasks_per_stage =  input_all_tasks_per_stage
-    glob_input_per_task_all_stages = input_per_task_all_stages
-    glob_output_per_task_per_stage = output_per_task_per_stage
-    glob_intermediate_output_per_task_per_stage = intermediate_output_per_task_per_stage
-    glob_output_per_task_final_stage = output_per_task_final_stage
-
+def execute_wf(resource_desc, task_desc, io_desc):
 
     # Create a new session. A session is a set of Pilot Managers
     # and Unit Managers (with associated Pilots and ComputeUnits).
@@ -80,7 +70,6 @@ def execute_wf(
     print "Pilot UID        : {0} ".format( pilot.uid )
 
     # Register callbacks for pilot state changes
-    #pilot.register_state_callback(pilot_state_change_cb)
     pmgr.register_callback(pilot_state_change_cb)
 
     # Combine the ComputePilot, the workload and a scheduler via # a UnitManager object.
@@ -96,10 +85,10 @@ def execute_wf(
     stage0_cus = []
     stage = 0
 
-    for task in tasks:
+    for task in task_desc.tasks:
         print '\n##### Performing initial stage for task %s' % task
 
-        mtms_task = construct_cud(task, stage)
+        mtms_task = construct_cud(task, stage, task_desc, io_desc)
 
         #mtms_task.register_callback(unit_state_change_cb)
 
@@ -135,98 +124,98 @@ def execute_wf(
 #
 # Create a Compute Unit Description
 #
-def construct_cud(task=None, stage=None):
+def construct_cud(task, stage, task_desc, io_desc):
 
     print '### Constructing CUD for task %s stage %s' % (task, stage)
-    cu = sagapilot.ComputeUnitDescription()
+    cud = sagapilot.ComputeUnitDescription()
 
     # The __TASK__ and __STAGE__ substitutions are arguably not
     # required from an application perspective, # but are
     # certainly useful for development/debugging purposes.
     task_substitutions = {'__TASK__': task, '__STAGE__': stage}
 
-    for label, pattern in glob_input_per_task_first_stage.items():
+    for label, pattern in io_desc.input_per_task_first_stage.items():
         tmp = Template(pattern)
         filename = tmp.substitute(TASK=task, STAGE=stage)
         print '### Using initial input file %s as %s' % (filename, label)
         task_substitutions[label] = filename
 
-    for label, pattern in glob_input_all_tasks_per_stage.items():
+    for label, pattern in io_desc.input_all_tasks_per_stage.items():
         tmp = Template(pattern)
         filename = tmp.substitute(TASK=task, STAGE=stage)
         print '### Using all task per stage input file %s as %s' % (filename, label)
         task_substitutions[label] = filename
 
-    if stage != glob_num_stages-1:
-        for entry in glob_intermediate_output_per_task_per_stage:
+    if stage != task_desc.num_stages-1:
+        for entry in io_desc.intermediate_output_per_task_per_stage:
             tmp = Template(entry['pattern'])
             filename = tmp.substitute(TASK=task, STAGE=stage-1)
             label = entry['input_label']
             print '### Using intermediate per task per stage input file %s as %s' % (filename, label)
             task_substitutions[label] = filename
 
-    for label, pattern in glob_input_per_task_all_stages.items():
+    for label, pattern in io_desc.input_per_task_all_stages.items():
         tmp = Template(pattern)
         filename = tmp.substitute(TASK=task, STAGE=stage)
         print '### Using per task all stage input file %s as %s' % (filename, label)
         task_substitutions[label] = filename
 
-    for label, pattern in glob_output_per_task_per_stage.items():
+    for label, pattern in io_desc.output_per_task_per_stage.items():
         tmp = Template(pattern)
         filename = tmp.substitute(TASK=task, STAGE=stage)
         print '### Using per task per stage ouput file %s as %s' % (filename, label)
         task_substitutions[label] = filename
 
-    if stage != glob_num_stages-1: # If not the latest stage
-        for entry in glob_intermediate_output_per_task_per_stage:
+    if stage != task_desc.num_stages-1: # If not the latest stage
+        for entry in io_desc.intermediate_output_per_task_per_stage:
             tmp = Template(entry['pattern'])
             filename = tmp.substitute(TASK=task, STAGE=stage)
             label = entry['output_label']
             print '### Using intermediate per task per stage output file %s as %s' % (filename, label)
             task_substitutions[label] = filename
 
-    if stage == glob_num_stages-1: # If this is the (first and) last step
-        for label, pattern in glob_output_per_task_final_stage.items():
+    if stage == task_desc.num_stages-1: # If this is the (first and) last step
+        for label, pattern in io_desc.output_per_task_final_stage.items():
             tmp = Template(pattern)
             filename = tmp.substitute(TASK=task, STAGE=stage)
             print '### Using per task final stage output file %s as %s' % (filename, label)
             task_substitutions[label] = filename
 
-    if glob_task_executable:
-        if not glob_task_arguments:
-            print '### Will execute "%s"' % glob_task_executable
+    if task_desc.executable:
+        if not task_desc.arguments:
+            print '### Will execute "%s"' % task_desc.executable
             arguments = None
         else:
-            tmp = Template(glob_task_arguments)
+            tmp = Template(task_desc.arguments)
             arguments = tmp.substitute(task_substitutions)
-            print '### Will execute "%s %s"' % (glob_task_executable, arguments)
+            print '### Will execute "%s %s"' % (task_desc.executable, arguments)
     else:
         print '### ERROR: Executable not specified!!'
 
 
     # Name
-    cu.name = "mtms-task-%s-%s" % (task, stage)
+    cud.name = "mtms-task-%s-%s" % (task, stage)
 
     # Executable
-    cu.executable = glob_task_executable
+    cud.executable = task_desc.executable
 
     # Arguments
     if arguments:
-        cu.arguments = arguments
+        cud.arguments = arguments
 
     # Environment
-    #cu.environment =  {}
+    cud.environment =  task_desc.environment
 
     # Input
-    #cu.input_data  = [ "./file1.dat   > file1.dat",
+    #cud.input_data  = [ "./file1.dat   > file1.dat",
     #                "./file2.dat   > file2.dat" ]
     #input = bja_input
 
     # Output
-    #cu.output_data = [ "result-%s.dat < STDOUT" % unit_count]
+    #cud.output_data = [ "result-%s.dat < STDOUT" % unit_count]
     #output = bja_output,
 
     # Cores
-    cu.cores  =  1
+    cud.cores  =  task_desc.num_cores
 
-    return cu
+    return cud
