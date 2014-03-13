@@ -15,56 +15,16 @@ DBURL  = "mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017"
 
 task_repo = {}
 
-# ----------------------------------------------------------------------------
-#
-# def resource_cb(origin, old_state, new_state):
-#     """Resource callback function: writes resource allocation state
-# changes to STDERR.
-#
-# It aborts the script script with exit code '-1' if the resource
-# allocation state is 'FAILED'.
-#
-# (Obviously, more logic can be built into the callback function, for
-# example fault tolerance.)
-# """
-#     msg = " * Resource '%s' state changed from '%s' to '%s'.\n" % \
-#           (str(origin), old_state, new_state)
-#     sys.stderr.write(msg)
-#
-#     if new_state == bigjobasync.FAILED:
-#         # Print the log and exit if big job has failed
-#         for entry in origin.log:
-#             print " * LOG: %s" % entry
-#         sys.stderr.write(" * EXITING.\n")
-#         sys.exit(-1)
-
-def pilot_state_change_cb(pilot_uid, state):
+def pilot_state_change_cb(pilot, state):
     """pilot_state_change_cb is a callback function. It handles ComputePilot
     state changes.
     """
-    print "[Callback]: ComputePilot '{0}' state changed to {1}.".format(pilot_uid, state)
+    print "[Callback]: ComputePilot '{0}' state changed to {1}.".format(pilot, state)
 
-def unit_state_change_cb(unit_uid, state):
+def unit_state_change_cb(unit, state):
     """ Callback for units.
     """
-    print "[Callback]: Unit '{0}' state changed to {1}.".format(unit_uid, state)
-
-# ----------------------------------------------------------------------------
-#
-def task_cb(origin, old_state, new_state):
-    """Task callback function: writes task state changes to STDERR
-"""
-    msg = " * Task %s state changed from '%s' to '%s'.\n" % \
-          (str(origin), old_state, new_state)
-    sys.stderr.write(msg)
-
-    if new_state == bigjobasync.FAILED:
-        # Print the log entry if task has failed to run
-        for entry in origin.log:
-            print " LOG: %s" % entry
-
-    print 'Task repo inside task_cb:', task_repo
-
+    print "[Callback]: Unit '{0}' state changed to {1}.".format(unit, state)
 
 def execute_wf(
         # Resource configuration
@@ -109,7 +69,6 @@ def execute_wf(
     pmgr = sagapilot.PilotManager(session=session)
     print "PilotManager UID : {0} ".format( pmgr.uid )
 
-
     # Define a 2-core local pilot in /tmp/sagapilot.sandbox that runs  for 10 minutes.
     pdesc = sagapilot.ComputePilotDescription()
     pdesc.resource  = "localhost"
@@ -140,14 +99,15 @@ def execute_wf(
     for task in tasks:
         print '\n##### Performing initial stage for task %s' % task
 
-        mtms_task = construct_bja_task(task, stage)
+        mtms_task = construct_cud(task, stage)
+
+        #mtms_task.register_callback(unit_state_change_cb)
 
         # Put it on the list of initial tasks to execute
         stage0_cus.append(mtms_task)
 
         task_repo[mtms_task.name] = {'task': mtms_task, 'stage': stage}
         print 'task repo inside execute_wf:', task_repo
-
 
     # Submit the previously created ComputeUnit descriptions to the
     # PilotManager. This will trigger the selected scheduler to start
@@ -171,9 +131,14 @@ def execute_wf(
     # Remove session from database
     session.destroy()
 
-def construct_bja_task(task=None, stage=None):
+#########################################
+#
+# Create a Compute Unit Description
+#
+def construct_cud(task=None, stage=None):
 
-    print '### Constructing BJA task for task %s stage %s' % (task, stage)
+    print '### Constructing CUD for task %s stage %s' % (task, stage)
+    cu = sagapilot.ComputeUnitDescription()
 
     # The __TASK__ and __STAGE__ substitutions are arguably not
     # required from an application perspective, # but are
@@ -238,7 +203,6 @@ def construct_bja_task(task=None, stage=None):
     else:
         print '### ERROR: Executable not specified!!'
 
-    cu = sagapilot.ComputeUnitDescription()
 
     # Name
     cu.name = "mtms-task-%s-%s" % (task, stage)
