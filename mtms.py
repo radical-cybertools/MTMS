@@ -12,6 +12,12 @@ verbose = False
 DBURL  = "mongodb://localhost:27017"
 
 
+class Resource_Description():
+    def __init__(self):
+        self.resource  = "localhost"
+        self.runtime   = 42 # minutes
+        self.cores     = 1
+
 class Task_Description():
     def __init__(self):
 
@@ -176,6 +182,7 @@ class Engine(object):
         # Wait for all compute units to finish.
         while self.tasks_complete < len(self.task_desc.tasks):
             self.umgr.wait_units()
+        stop = datetime.datetime.now()
 
         # Cancel all pilots.
         pmgr.cancel_pilots()
@@ -183,12 +190,10 @@ class Engine(object):
         # Remove session from database
         session.destroy()
 
-        ting2ted = sum( [x['ts_submitted'] - x['ts_submitting'] for x in self.task_repo.values()], datetime.timedelta())
-        sub2run = sum( [x['ts_running'] - x['ts_submitted'] for x in self.task_repo.values()], datetime.timedelta())
-        run2fin = sum( [x['ts_done'] - x['ts_running'] for x in self.task_repo.values()], datetime.timedelta())
-        print 'Cumulative time between submission and submitted: %s' % ting2ted
-        print 'Cumulative time between submitted and running: %s' % sub2run
-        print 'Cumulative time between running and finished: %s' % run2fin
+        self.ting2ted = sum( [x['ts_submitted'] - x['ts_submitting'] for x in self.task_repo.values()], datetime.timedelta())
+        self.sub2run = sum( [x['ts_running'] - x['ts_submitted'] for x in self.task_repo.values()], datetime.timedelta())
+        self.run2fin = sum( [x['ts_done'] - x['ts_running'] for x in self.task_repo.values()], datetime.timedelta())
+        self.makespan = stop - self.start
 
     #########################################
     #
