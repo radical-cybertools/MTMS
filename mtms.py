@@ -4,19 +4,14 @@ from string import Template
 import datetime
 import sagapilot
 
-verbose = False
-
-# DBURL points to a MongoDB server. For installation of a MongoDB server, please
-# refer to the MongoDB website: http://docs.mongodb.org/manual/installation/
-#DBURL  = "mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017"
-DBURL  = "mongodb://localhost:27017"
-
 
 class Resource_Description():
     def __init__(self):
-        self.resource  = "localhost"
-        self.runtime   = 42 # minutes
-        self.cores     = 1
+        self.resource = "localhost"
+        self.runtime = 42 # minutes
+        self.cores = 1
+        self.dburl = 'mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017'
+
 
 class Task_Description():
     def __init__(self):
@@ -56,7 +51,8 @@ class Engine(object):
         """pilot_state_change_cb is a callback function. It handles ComputePilot
         state changes.
         """
-        print "[Callback]: ComputePilot '{0}' state changed to {1}.".format(pilot.uid, state)
+        if self.verbose:
+            print "[Callback]: ComputePilot '{0}' state changed to {1}.".format(pilot.uid, state)
 
     def unit_state_change_cb(self, unit, state):
         """ Callback for units.
@@ -99,7 +95,8 @@ class Engine(object):
         elif state == sagapilot.states.PENDING or \
              state == sagapilot.states.PENDING_EXECUTION or \
              state == sagapilot.states.PENDING_INPUT_TRANSFER or \
-             state == sagapilot.states.PENDING_OUTPUT_TRANSFER:
+             state == sagapilot.states.NEW or \
+                state == sagapilot.states.PENDING_OUTPUT_TRANSFER:
 
             self.log('Task %s is %s.' % (task_name, state))
 
@@ -135,38 +132,44 @@ class Engine(object):
     def log(self, msg):
         now = datetime.datetime.now()
         cum = now - self.start
-        print '### %s ### %s' % (cum, msg)
+        if self.verbose:
+            print '### %s ### %s' % (cum, msg)
 
-    def execute(self, resource_desc, task_desc, io_desc):
+    def execute(self, resource_desc, task_desc, io_desc, verbose=False):
+
+        self.verbose = verbose
 
         self.io_desc = io_desc
         self.task_desc = task_desc
 
         # Create a new session. A session is a set of Pilot Managers
         # and Unit Managers (with associated Pilots and ComputeUnits).
-        session = sagapilot.Session(database_url=DBURL)
-        print "Session UID      : {0} ".format(session.uid)
+        session = sagapilot.Session(database_url=resource_desc.dburl)
+        if self.verbose:
+            print "Session UID      : {0} ".format(session.uid)
 
         # Add a Pilot Manager
         pmgr = sagapilot.PilotManager(session=session)
-        print "PilotManager UID : {0} ".format( pmgr.uid )
+        if self.verbose:
+            print "PilotManager UID : {0} ".format( pmgr.uid )
 
-        # Define a 2-core local pilot in /tmp/sagapilot.sandbox that runs  for 10 minutes.
-        pdesc = sagapilot.ComputePilotDescription()
-        pdesc.resource  = "localhost"
-        pdesc.runtime   = 42 # minutes
-        pdesc.cores     = 1
+        pilot_desc = sagapilot.ComputePilotDescription()
+        pilot_desc.resource  = resource_desc.resource
+        pilot_desc.runtime   = resource_desc.runtime
+        pilot_desc.cores     = resource_desc.cores
 
         # Launch the pilot.
-        pilot = pmgr.submit_pilots(pdesc)
-        print "Pilot UID        : {0} ".format( pilot.uid )
+        pilot = pmgr.submit_pilots(pilot_desc)
+        if self.verbose:
+            print "Pilot UID        : {0} ".format( pilot.uid )
 
         # Register callbacks for pilot state changes
         pmgr.register_callback(self.pilot_state_change_cb)
 
         # Combine the ComputePilot, the workload and a scheduler via # a UnitManager object.
         self.umgr = sagapilot.UnitManager( session=session, scheduler=sagapilot.SCHED_DIRECT_SUBMISSION)
-        print "UnitManager UID  : {0} ".format(self.umgr.uid)
+        if self.verbose:
+            print "UnitManager UID  : {0} ".format(self.umgr.uid)
 
         # Register callbacks for unit state changes
         self.umgr.register_callback(self.unit_state_change_cb)
@@ -212,14 +215,14 @@ class Engine(object):
         for label, pattern in self.io_desc.input_per_task_first_stage.items():
             tmp = Template(pattern)
             filename = tmp.substitute(TASK=task, STAGE=stage)
-            if verbose:
+            if self.verbose:
                 print '### Using initial input file %s as %s' % (filename, label)
             task_substitutions[label] = filename
 
         for label, pattern in self.io_desc.input_all_tasks_per_stage.items():
             tmp = Template(pattern)
             filename = tmp.substitute(TASK=task, STAGE=stage)
-            if verbose:
+            if self.verbose:
                 print '### Using all task per stage input file %s as %s' % (filename, label)
             task_substitutions[label] = filename
 
@@ -228,21 +231,21 @@ class Engine(object):
                 tmp = Template(entry['pattern'])
                 filename = tmp.substitute(TASK=task, STAGE=stage-1)
                 label = entry['input_label']
-                if verbose:
+                if self.verbose:
                     print '### Using intermediate per task per stage input file %s as %s' % (filename, label)
                 task_substitutions[label] = filename
 
         for label, pattern in self.io_desc.input_per_task_all_stages.items():
             tmp = Template(pattern)
             filename = tmp.substitute(TASK=task, STAGE=stage)
-            if verbose:
+            if self.verbose:
                 print '### Using per task all stage input file %s as %s' % (filename, label)
             task_substitutions[label] = filename
 
         for label, pattern in self.io_desc.output_per_task_per_stage.items():
             tmp = Template(pattern)
             filename = tmp.substitute(TASK=task, STAGE=stage)
-            if verbose:
+            if self.verbose:
                 print '### Using per task per stage output file %s as %s' % (filename, label)
             task_substitutions[label] = filename
 
@@ -251,7 +254,7 @@ class Engine(object):
                 tmp = Template(entry['pattern'])
                 filename = tmp.substitute(TASK=task, STAGE=stage)
                 label = entry['output_label']
-                if verbose:
+                if self.verbose:
                     print '### Using intermediate per task per stage output file %s as %s' % (filename, label)
                 task_substitutions[label] = filename
 
@@ -259,19 +262,19 @@ class Engine(object):
             for label, pattern in self.io_desc.output_per_task_final_stage.items():
                 tmp = Template(pattern)
                 filename = tmp.substitute(TASK=task, STAGE=stage)
-                if verbose:
+                if self.verbose:
                     print '### Using per task final stage output file %s as %s' % (filename, label)
                 task_substitutions[label] = filename
 
         if self.task_desc.executable:
             if not self.task_desc.arguments:
-                if verbose:
+                if self.verbose:
                     print '### Will execute "%s"' % self.task_desc.executable
                 arguments = None
             else:
                 tmp = Template(self.task_desc.arguments)
                 arguments = tmp.substitute(task_substitutions)
-                if verbose:
+                if self.verbose:
                     print '### Will execute "%s %s"' % (self.task_desc.executable, arguments)
         else:
             print '### ERROR: Executable not specified!!'
