@@ -1,17 +1,37 @@
-MTMS
-====
+#Multi-Task Multi-Stage libary
 
-++ Example
+## Introduction
 
-The example directory includes a script to verify the setup on a remote
-resource.
+This library supports the Multi-Task Multi-Stage pattern: a workflow of parallel Tasks (pipelines) with the same number of stages (steps).
+All tasks execute the same application, although with (possibly) different configuration and parameters.
+For the execution mtms relies on RADICAL-Pilot.
 
-++ mtms
+
+## Installation
+
+TODO
+
+## The core library
 
 This is the generic Multi-Task Multi-Stage library
 
+```python
+import mtms
 
-++ namd_mtms_wf
+res = mtms.Resource_Description()
+io = mtms.IO_Description()
+tasks = mtms.Task_Description()
+engine = mtms.Engine()
 
-This is the namd specific library that makes use of mtms.
+engine.execute(res, tasks, io)
+```
+
+## Example: NAMD workflow
+
+namd_mtms_wf
+
+This is the NAMD workflow specific example that makes use of the mtms library.
+
+
+
 
