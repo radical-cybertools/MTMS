@@ -1,10 +1,7 @@
 import sys
 import os
 from string import Template
-
-
 import datetime
-
 import sagapilot
 
 verbose = False
@@ -13,19 +10,6 @@ verbose = False
 # refer to the MongoDB website: http://docs.mongodb.org/manual/installation/
 #DBURL  = "mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017"
 DBURL  = "mongodb://localhost:27017"
-
-glob_task_repo = {}
-glob_umgr = None
-glob_io_desc = None
-glob_task_desc = None
-glob_tasks_complete = 0
-
-start = None
-
-def log(msg):
-    now = datetime.datetime.now()
-    cum = now - start
-    print '### %s ### %s' % (cum, msg)
 
 
 class Task_Description():
@@ -41,6 +25,7 @@ class Task_Description():
         self.tasks = None # List of elements / TODO: NEED A BETTER NAME!!
         self.num_stages = 1
 
+
 class IO_Description():
     def __init__(self):
         # Task I/O specification in the form of { 'label': 'pattern' }
@@ -54,260 +39,262 @@ class IO_Description():
         # Intermediate in the form of [{input_label, output_label, pattern}]
         self.intermediate_output_per_task_per_stage=[]
 
-def pilot_state_change_cb(pilot, state):
-    """pilot_state_change_cb is a callback function. It handles ComputePilot
-    state changes.
-    """
-    print "[Callback]: ComputePilot '{0}' state changed to {1}.".format(pilot.uid, state)
 
-def unit_state_change_cb(unit, state):
-    """ Callback for units.
-    """
-    #print "[Callback]: Unit '{0}' state changed to {1}.".format(unit.uid, state)
+class Engine(object):
 
-    determine_next_step(unit.uid, state)
+    def __init__(self):
+        self.task_repo = {}
+        self.tasks_complete = 0
 
+    def pilot_state_change_cb(self, pilot, state):
+        """pilot_state_change_cb is a callback function. It handles ComputePilot
+        state changes.
+        """
+        print "[Callback]: ComputePilot '{0}' state changed to {1}.".format(pilot.uid, state)
 
+    def unit_state_change_cb(self, unit, state):
+        """ Callback for units.
+        """
+        #print "[Callback]: Unit '{0}' state changed to {1}.".format(unit.uid, state)
 
-def determine_next_step(cu_uid, state):
-    entry = glob_task_repo[cu_uid]
-    task_name = entry['desc'].name
-    task = entry['task']
-    stage = entry['stage']
+        self.determine_next_step(unit.uid, state)
 
-    if state == sagapilot.states.DONE:
-        log('Task %s is finished.' % task_name)
-        glob_task_repo[cu_uid]['ts_done'] = datetime.datetime.now()
+    def determine_next_step(self, cu_uid, state):
 
-        #cu = glob_umgr.get_units(cu_uid)[0]
-        #print 'cu:', cu
-        # # print 'Details: ', cu.execution_details()
-        #print 'Log:', cu.log
+        entry = self.task_repo[cu_uid]
+        task_name = entry['desc'].name
+        task = entry['task']
+        stage = entry['stage']
 
-        if stage == glob_task_desc.num_stages - 1:
-            log('Last stage (%d) reached for task %s ...' % (stage, task_name))
-            global glob_tasks_complete
-            glob_tasks_complete += 1
+        if state == sagapilot.states.DONE:
+            self.log('Task %s is finished.' % task_name)
+            self.task_repo[cu_uid]['ts_done'] = datetime.datetime.now()
+
+            #cu = self.umgr.get_units(cu_uid)[0]
+            #print 'cu:', cu
+            # # print 'Details: ', cu.execution_details()
+            #print 'Log:', cu.log
+
+            if stage == self.task_desc.num_stages - 1:
+                self.log('Last stage (%d) reached for task %s ...' % (stage, task_name))
+                self.tasks_complete += 1
+            else:
+                next_stage = int(stage) + 1
+                self.log('Launching task %s next stage: %d' % (task, next_stage))
+                self.launch_task(task, next_stage)
+
+        elif state == sagapilot.states.RUNNING:
+            self.log('Task %s started running.' % task_name)
+            self.task_repo[cu_uid]['ts_running'] = datetime.datetime.now()
+
+        elif state == sagapilot.states.FAILED:
+            self.log('Task %s is failed.' % task_name)
+
+        elif state == sagapilot.states.PENDING or \
+             state == sagapilot.states.PENDING_EXECUTION or \
+             state == sagapilot.states.PENDING_INPUT_TRANSFER or \
+             state == sagapilot.states.PENDING_OUTPUT_TRANSFER:
+
+            self.log('Task %s is %s.' % (task_name, state))
+
         else:
-            next_stage = int(stage) + 1
-            log('Launching task %s next stage: %d' % (task, next_stage))
-            launch_task(task, next_stage, glob_task_desc, glob_io_desc)
-
-    elif state == sagapilot.states.RUNNING:
-        log('Task %s started running.' % task_name)
-        glob_task_repo[cu_uid]['ts_running'] = datetime.datetime.now()
-
-    elif state == sagapilot.states.FAILED:
-        log('Task %s is failed.' % task_name)
-
-    elif state == sagapilot.states.PENDING or \
-         state == sagapilot.states.PENDING_EXECUTION or \
-         state == sagapilot.states.PENDING_INPUT_TRANSFER or \
-         state == sagapilot.states.PENDING_OUTPUT_TRANSFER:
-
-        log('Task %s is %s.' % (task_name, state))
-
-    else:
-        print 'ERROR: uncatched state: %s' % state
+            print 'ERROR: uncaught state: %s' % state
 
 
-def launch_initial_tasks(task_desc, io_desc):
-    stage = 0
-    for task in task_desc.tasks:
-        log('Performing initial stage for task %s' % task)
-        launch_task(task, stage, task_desc, io_desc)
+    def launch_initial_tasks(self):
+        stage = 0
+        for task in self.task_desc.tasks:
+            self.log('Performing initial stage for task %s' % task)
+            self.launch_task(task, stage)
 
+    def launch_task(self, task, stage):
 
-def launch_task(task, stage, task_desc, io_desc):
+        mtms_cud = self.construct_cud(task, stage)
 
-    mtms_cud = construct_cud(task, stage, task_desc, io_desc)
+        # Submit the previously created ComputeUnit descriptions to the
+        # PilotManager. This will trigger the selected scheduler to start
+        # assigning ComputeUnits to the ComputePilots.
+        self.log('Submitting task %s stage %d' % (task, stage))
+        ting = datetime.datetime.now()
+        cu = self.umgr.submit_units(mtms_cud)
+        ted = datetime.datetime.now()
+        self.log('Submitted task %s stage %d' % (task, stage))
 
-    # Submit the previously created ComputeUnit descriptions to the
-    # PilotManager. This will trigger the selected scheduler to start
-    # assigning ComputeUnits to the ComputePilots.
-    log('Submitting task %s stage %d' % (task, stage))
-    ting = datetime.datetime.now()
-    cu = glob_umgr.submit_units(mtms_cud)
-    ted = datetime.datetime.now()
-    log('Submitted task %s stage %d' % (task, stage))
+        # Add to repo
+        self.task_repo[cu.uid] = {'task': task, 'stage': stage, 'desc': mtms_cud}
 
-    # Add to repo
-    glob_task_repo[cu.uid] = {'task': task, 'stage': stage, 'desc': mtms_cud}
+        self.task_repo[cu.uid]['ts_submitting'] = ting
+        self.task_repo[cu.uid]['ts_submitted'] = ted
 
-    glob_task_repo[cu.uid]['ts_submitting'] = ting
-    glob_task_repo[cu.uid]['ts_submitted'] = ted
+    def log(self, msg):
+        now = datetime.datetime.now()
+        cum = now - self.start
+        print '### %s ### %s' % (cum, msg)
 
+    def execute(self, resource_desc, task_desc, io_desc):
 
+        self.io_desc = io_desc
+        self.task_desc = task_desc
 
-def execute_wf(resource_desc, task_desc, io_desc):
+        # Create a new session. A session is a set of Pilot Managers
+        # and Unit Managers (with associated Pilots and ComputeUnits).
+        session = sagapilot.Session(database_url=DBURL)
+        print "Session UID      : {0} ".format(session.uid)
 
+        # Add a Pilot Manager
+        pmgr = sagapilot.PilotManager(session=session)
+        print "PilotManager UID : {0} ".format( pmgr.uid )
 
-    global glob_io_desc
-    glob_io_desc = io_desc
-    global glob_task_desc
-    glob_task_desc = task_desc
+        # Define a 2-core local pilot in /tmp/sagapilot.sandbox that runs  for 10 minutes.
+        pdesc = sagapilot.ComputePilotDescription()
+        pdesc.resource  = "localhost"
+        pdesc.runtime   = 42 # minutes
+        pdesc.cores     = 1
 
-    # Create a new session. A session is a set of Pilot Managers
-    # and Unit Managers (with associated Pilots and ComputeUnits).
-    session = sagapilot.Session(database_url=DBURL)
-    print "Session UID      : {0} ".format(session.uid)
+        # Launch the pilot.
+        pilot = pmgr.submit_pilots(pdesc)
+        print "Pilot UID        : {0} ".format( pilot.uid )
 
-    # Add a Pilot Manager
-    pmgr = sagapilot.PilotManager(session=session)
-    print "PilotManager UID : {0} ".format( pmgr.uid )
+        # Register callbacks for pilot state changes
+        pmgr.register_callback(self.pilot_state_change_cb)
 
-    # Define a 2-core local pilot in /tmp/sagapilot.sandbox that runs  for 10 minutes.
-    pdesc = sagapilot.ComputePilotDescription()
-    pdesc.resource  = "localhost"
-    pdesc.runtime   = 15 # minutes
-    pdesc.cores     = 8
+        # Combine the ComputePilot, the workload and a scheduler via # a UnitManager object.
+        self.umgr = sagapilot.UnitManager( session=session, scheduler=sagapilot.SCHED_DIRECT_SUBMISSION)
+        print "UnitManager UID  : {0} ".format(self.umgr.uid)
 
-    # Launch the pilot.
-    pilot = pmgr.submit_pilots(pdesc)
-    print "Pilot UID        : {0} ".format( pilot.uid )
+        # Register callbacks for unit state changes
+        self.umgr.register_callback(self.unit_state_change_cb)
 
-    # Register callbacks for pilot state changes
-    pmgr.register_callback(pilot_state_change_cb)
+         # Add the previously created ComputePilot to the UnitManager.
+        self.umgr.add_pilots(pilot)
 
-    # Combine the ComputePilot, the workload and a scheduler via # a UnitManager object.
-    global glob_umgr
-    glob_umgr = sagapilot.UnitManager( session=session, scheduler=sagapilot.SCHED_DIRECT_SUBMISSION)
-    print "UnitManager UID  : {0} ".format(glob_umgr.uid)
+        pmgr.wait_pilots(pilot_ids=None, state=sagapilot.states.RUNNING)
+        self.start = datetime.datetime.now()
+        self.launch_initial_tasks()
 
-    # Register callbacks for unit state changes
-    glob_umgr.register_callback(unit_state_change_cb)
+        # TODO: Need a better estimate for when its "done"
+        # Wait for all compute units to finish.
+        while self.tasks_complete < len(self.task_desc.tasks):
+            self.umgr.wait_units()
 
-     # Add the previously created ComputePilot to the UnitManager.
-    glob_umgr.add_pilots(pilot)
+        # Cancel all pilots.
+        pmgr.cancel_pilots()
 
-    pmgr.wait_pilots(pilot_ids=None, state=sagapilot.states.RUNNING)
-    global start
-    start = datetime.datetime.now()
-    launch_initial_tasks(task_desc, io_desc)
+        # Remove session from database
+        session.destroy()
 
-    # TODO: Need a better estimate for when its "done"
-    # Wait for all compute units to finish.
-    while glob_tasks_complete < len(glob_task_desc.tasks):
-        glob_umgr.wait_units()
+        ting2ted = sum( [x['ts_submitted'] - x['ts_submitting'] for x in self.task_repo.values()], datetime.timedelta())
+        sub2run = sum( [x['ts_running'] - x['ts_submitted'] for x in self.task_repo.values()], datetime.timedelta())
+        run2fin = sum( [x['ts_done'] - x['ts_running'] for x in self.task_repo.values()], datetime.timedelta())
+        print 'Cumulative time between submission and submitted: %s' % ting2ted
+        print 'Cumulative time between submitted and running: %s' % sub2run
+        print 'Cumulative time between running and finished: %s' % run2fin
 
-    # Cancel all pilots.
-    pmgr.cancel_pilots()
+    #########################################
+    #
+    # Create a Compute Unit Description
+    #
+    def construct_cud(self, task, stage):
 
-    # Remove session from database
-    session.destroy()
+        self.log('Constructing CUD for task %s stage %s' % (task, stage))
+        cud = sagapilot.ComputeUnitDescription()
 
-    ting2ted = sum( [x['ts_submitted'] - x['ts_submitting'] for x in glob_task_repo.values()], datetime.timedelta())
-    sub2run = sum( [x['ts_running'] - x['ts_submitted'] for x in glob_task_repo.values()], datetime.timedelta())
-    run2fin = sum( [x['ts_done'] - x['ts_running'] for x in glob_task_repo.values()], datetime.timedelta())
-    print 'Cumulative time between submission and submitted: %s' % ting2ted
-    print 'Cumulative time between submitted and running: %s' % sub2run
-    print 'Cumulative time between running and finished: %s' % run2fin
+        # The __TASK__ and __STAGE__ substitutions are arguably not
+        # required from an application perspective, # but are
+        # certainly useful for development/debugging purposes.
+        task_substitutions = {'__TASK__': task, '__STAGE__': stage}
 
-#########################################
-#
-# Create a Compute Unit Description
-#
-def construct_cud(task, stage, task_desc, io_desc):
-
-    log('Constructing CUD for task %s stage %s' % (task, stage))
-    cud = sagapilot.ComputeUnitDescription()
-
-    # The __TASK__ and __STAGE__ substitutions are arguably not
-    # required from an application perspective, # but are
-    # certainly useful for development/debugging purposes.
-    task_substitutions = {'__TASK__': task, '__STAGE__': stage}
-
-    for label, pattern in io_desc.input_per_task_first_stage.items():
-        tmp = Template(pattern)
-        filename = tmp.substitute(TASK=task, STAGE=stage)
-        if verbose:
-            print '### Using initial input file %s as %s' % (filename, label)
-        task_substitutions[label] = filename
-
-    for label, pattern in io_desc.input_all_tasks_per_stage.items():
-        tmp = Template(pattern)
-        filename = tmp.substitute(TASK=task, STAGE=stage)
-        if verbose:
-            print '### Using all task per stage input file %s as %s' % (filename, label)
-        task_substitutions[label] = filename
-
-    if stage != task_desc.num_stages-1:
-        for entry in io_desc.intermediate_output_per_task_per_stage:
-            tmp = Template(entry['pattern'])
-            filename = tmp.substitute(TASK=task, STAGE=stage-1)
-            label = entry['input_label']
-            if verbose:
-                print '### Using intermediate per task per stage input file %s as %s' % (filename, label)
-            task_substitutions[label] = filename
-
-    for label, pattern in io_desc.input_per_task_all_stages.items():
-        tmp = Template(pattern)
-        filename = tmp.substitute(TASK=task, STAGE=stage)
-        if verbose:
-            print '### Using per task all stage input file %s as %s' % (filename, label)
-        task_substitutions[label] = filename
-
-    for label, pattern in io_desc.output_per_task_per_stage.items():
-        tmp = Template(pattern)
-        filename = tmp.substitute(TASK=task, STAGE=stage)
-        if verbose:
-            print '### Using per task per stage output file %s as %s' % (filename, label)
-        task_substitutions[label] = filename
-
-    if stage != task_desc.num_stages-1: # If not the latest stage
-        for entry in io_desc.intermediate_output_per_task_per_stage:
-            tmp = Template(entry['pattern'])
-            filename = tmp.substitute(TASK=task, STAGE=stage)
-            label = entry['output_label']
-            if verbose:
-                print '### Using intermediate per task per stage output file %s as %s' % (filename, label)
-            task_substitutions[label] = filename
-
-    if stage == task_desc.num_stages-1: # If this is the (first and) last step
-        for label, pattern in io_desc.output_per_task_final_stage.items():
+        for label, pattern in self.io_desc.input_per_task_first_stage.items():
             tmp = Template(pattern)
             filename = tmp.substitute(TASK=task, STAGE=stage)
             if verbose:
-                print '### Using per task final stage output file %s as %s' % (filename, label)
+                print '### Using initial input file %s as %s' % (filename, label)
             task_substitutions[label] = filename
 
-    if task_desc.executable:
-        if not task_desc.arguments:
+        for label, pattern in self.io_desc.input_all_tasks_per_stage.items():
+            tmp = Template(pattern)
+            filename = tmp.substitute(TASK=task, STAGE=stage)
             if verbose:
-                print '### Will execute "%s"' % task_desc.executable
-            arguments = None
+                print '### Using all task per stage input file %s as %s' % (filename, label)
+            task_substitutions[label] = filename
+
+        if stage != self.task_desc.num_stages-1:
+            for entry in self.io_desc.intermediate_output_per_task_per_stage:
+                tmp = Template(entry['pattern'])
+                filename = tmp.substitute(TASK=task, STAGE=stage-1)
+                label = entry['input_label']
+                if verbose:
+                    print '### Using intermediate per task per stage input file %s as %s' % (filename, label)
+                task_substitutions[label] = filename
+
+        for label, pattern in self.io_desc.input_per_task_all_stages.items():
+            tmp = Template(pattern)
+            filename = tmp.substitute(TASK=task, STAGE=stage)
+            if verbose:
+                print '### Using per task all stage input file %s as %s' % (filename, label)
+            task_substitutions[label] = filename
+
+        for label, pattern in self.io_desc.output_per_task_per_stage.items():
+            tmp = Template(pattern)
+            filename = tmp.substitute(TASK=task, STAGE=stage)
+            if verbose:
+                print '### Using per task per stage output file %s as %s' % (filename, label)
+            task_substitutions[label] = filename
+
+        if stage != self.task_desc.num_stages-1: # If not the latest stage
+            for entry in self.io_desc.intermediate_output_per_task_per_stage:
+                tmp = Template(entry['pattern'])
+                filename = tmp.substitute(TASK=task, STAGE=stage)
+                label = entry['output_label']
+                if verbose:
+                    print '### Using intermediate per task per stage output file %s as %s' % (filename, label)
+                task_substitutions[label] = filename
+
+        if stage == self.task_desc.num_stages-1: # If this is the (first and) last step
+            for label, pattern in self.io_desc.output_per_task_final_stage.items():
+                tmp = Template(pattern)
+                filename = tmp.substitute(TASK=task, STAGE=stage)
+                if verbose:
+                    print '### Using per task final stage output file %s as %s' % (filename, label)
+                task_substitutions[label] = filename
+
+        if self.task_desc.executable:
+            if not self.task_desc.arguments:
+                if verbose:
+                    print '### Will execute "%s"' % self.task_desc.executable
+                arguments = None
+            else:
+                tmp = Template(self.task_desc.arguments)
+                arguments = tmp.substitute(task_substitutions)
+                if verbose:
+                    print '### Will execute "%s %s"' % (self.task_desc.executable, arguments)
         else:
-            tmp = Template(task_desc.arguments)
-            arguments = tmp.substitute(task_substitutions)
-            if verbose:
-                print '### Will execute "%s %s"' % (task_desc.executable, arguments)
-    else:
-        print '### ERROR: Executable not specified!!'
+            print '### ERROR: Executable not specified!!'
 
 
-    # Name
-    cud.name = "mtms-task-%s-%s" % (task, stage)
+        # Name
+        cud.name = "mtms-task-%s-%s" % (task, stage)
 
-    # Executable
-    cud.executable = task_desc.executable
+        # Executable
+        cud.executable = self.task_desc.executable
 
-    # Arguments
-    if arguments:
-        cud.arguments = arguments
+        # Arguments
+        if arguments:
+            cud.arguments = arguments
 
-    # Environment
-    cud.environment =  task_desc.environment
+        # Environment
+        cud.environment =  self.task_desc.environment
 
-    # Input
-    #cud.input_data  = [ "./file1.dat   > file1.dat",
-    #                "./file2.dat   > file2.dat" ]
-    #input = bja_input
+        # Input
+        #cud.input_data  = [ "./file1.dat   > file1.dat",
+        #                "./file2.dat   > file2.dat" ]
+        #input = bja_input
 
-    # Output
-    #cud.output_data = [ "result-%s.dat < STDOUT" % unit_count]
-    #output = bja_output,
+        # Output
+        #cud.output_data = [ "result-%s.dat < STDOUT" % unit_count]
+        #output = bja_output,
 
-    # Cores
-    cud.cores  =  task_desc.num_cores
+        # Cores
+        cud.cores  =  self.task_desc.num_cores
 
-    return cud
+        return cud

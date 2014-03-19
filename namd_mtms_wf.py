@@ -26,9 +26,9 @@ if __name__ == '__main__':
     #
 
     # Number of chromosomes
-    NUM_CHRS = 1 # exp:5
+    NUM_CHRS = 2 # exp:5
     # Number of locations per chromosome
-    NUM_LOCS = 2 # exp:21
+    NUM_LOCS = 1 # exp:21
     # The time of simulation per system
     SIM_TRAJ_TIME = 3 # exp:20
     # The simulation time per dynamic step
@@ -134,7 +134,8 @@ if __name__ == '__main__':
         'o_xsc': 'dyn-${TASK}-${STAGE}.xsc'
     }
 
-    mtms.execute_wf(resource_desc, task_desc, io_desc)
+    engine = mtms.Engine()
+    engine.execute(resource_desc, task_desc, io_desc)
 
 #
 ###############################################################################
