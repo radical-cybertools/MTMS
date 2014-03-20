@@ -89,18 +89,25 @@ print 'sub2run_all_avg: %s' % sub2run_all_avg
 print 'run2fin_all_avg: %s' % run2fin_all_avg
 
 p = []
-c = 8
-p_sub = plt.bar(x,ting2ted_all_avg[core_counts.index(c)], width=0.8, color='blue', align='center')
-p_run = plt.bar(x,sub2run_all_avg[core_counts.index(c)], bottom=ting2ted_all_avg[core_counts.index(c)], width=0.8, color='red', align='center')
-p_fin = plt.bar(x,run2fin_all_avg[core_counts.index(c)], bottom=sub2run_all_avg[core_counts.index(c)], width=0.8, color='green', align='center')
+c = core_counts.index(8)
 
-plt.legend(reversed([p_sub, p_run, p_fin]), reversed(['Submitting - Submitted', 'Submitted - Running', 'Running - Finished']), title='Pilot core count', loc=2)
+width = 0.8
+
+p = []
+
+#xloc = [xx+width*c for xx in x]
+xloc = x
+p.append(plt.bar(xloc, ting2ted_all_avg[c], width=width, color='blue', align='center'))
+p.append(plt.bar(xloc, sub2run_all_avg[c], bottom=ting2ted_all_avg[c], width=width, color='red', align='center'))
+p.append(plt.bar(xloc, run2fin_all_avg[c], bottom=sub2run_all_avg[c], width=width, color='green', align='center'))
+
+plt.legend(p, reversed(['Submitting - Submitted', 'Submitted - Running', 'Running - Finished']), title='Phase', loc=2)
 
 plt.xlabel('Number of tasks (pipelines)')
 plt.ylabel('Cumulative time spend (seconds)')
-plt.title('Makespan of MTMS execution on single pilot with varying number of (parallel) tasks and pilot sizes.\n'\
+plt.title('Cumulative time spent on MTMS execution on single pilot with varying number of (parallel) tasks.\n'\
           'Execution on localhost with mongodb on localhost too.\n' \
-          'Number of stages is fixed at 8. Zero second payload.'
+          'Number of stages is fixed at 8 and core count fixed at 8. Zero second payload.'
         )
 plt.xticks(x, task_counts)
 plt.show()
