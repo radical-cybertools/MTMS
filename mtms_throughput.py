@@ -12,23 +12,23 @@ if __name__ == '__main__':
     #dburl = 'mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017'
 
     runs = 3
-    host = 'localhost'
-    stages = 10
-    #cores_parameters = [1,2,4,8,16]
-    #cores_parameters = [2]
-    cores_parameters = [2,4]
+    host_parameters = ['localhost']
+    num_stages_parameters = [1,2,4,8,16]
 
+    num_cores_parameters = [1,2,4,8]
     num_tasks_parameters = [1,2,4,8,16]
-    #num_tasks_parameters = [1,2,4,8,16]
-    #num_tasks_parameters = [1]
 
+    #task_length_parameters = [0,1,4,8,16,32,64]
     task_length_parameters = [0]
 
-    results = []
+    results = {}
+
+    host = host_parameters[0]
+    num_stages = num_stages_parameters[0]
 
     for run in range(runs):
 
-        for cores in cores_parameters:
+        for cores in num_cores_parameters:
 
             for num_tasks in num_tasks_parameters:
 
@@ -39,8 +39,6 @@ if __name__ == '__main__':
                     resource_desc.runtime = 240 # minutes
                     resource_desc.cores = cores
                     resource_desc.dburl = dburl
-
-                    num_stages = stages
 
                     task_desc = mtms.Task_Description()
                     task_desc.tasks = range(num_tasks) # Could be any set of "items"
@@ -56,22 +54,16 @@ if __name__ == '__main__':
                     try:
                         engine.execute(resource_desc, task_desc, io_desc, verbose=False)
                     except Exception, e:
-                        print 'Exception occurred: %s' % e.message
+                        print 'Exception occurred: %s' % e
                         continue
 
-                    result = {
-                        'run': run,
-                        'host': host,
-                        'cores': cores,
-                        'num_tasks': num_tasks,
-                        'num_stages': num_stages,
-                        'task_length': task_length,
-                        'makespan': engine.makespan,
-                        'cum_submission_2_submitted_2': engine.ting2ted,
-                        'cum_submitted_2_running': engine.sub2run,
-                        'cum_running_2_finished': engine.run2fin
-                    }
-                    results.append(result)
+                    result = (engine.makespan, engine.ting2ted, engine.sub2run, engine.run2fin)
+
+                    measurement = (host, num_stages, cores, num_tasks, task_length)
+                    if (measurement) not in results:
+                        results[measurement] = []
+                    results[measurement].append(result)
+
                     print result
 
     print results
