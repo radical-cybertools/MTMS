@@ -181,10 +181,10 @@ class Engine(object):
         pilot_states = pmgr.wait_pilots(pilot_ids=None,
                          state=[sagapilot.states.RUNNING,
                                 sagapilot.states.FAILED,
-                                sagapilot.states.CANCELED])
+                                sagapilot.states.CANCELED], timeout=30)
         # Check whether there are other states than 'running'
         if list(set(pilot_states)) != [sagapilot.states.RUNNING]:
-            raise('ERROR: Not all pilots are running: %s' % pilot_states)
+            raise Exception('ERROR: Not all pilots are running: %s' % pilot_states)
 
         # Now that the pilots started, begin the timing
         # TODO: This is useful for experiments, but not necessarily for normal running

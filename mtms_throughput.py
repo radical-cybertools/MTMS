@@ -53,7 +53,11 @@ if __name__ == '__main__':
                     engine = mtms.Engine()
                     print 'Executing run: %d, on host: %s, with %d cores, %d tasks, %d stages, with a %ss task length ...' % \
                           (run, host, cores, num_tasks, num_stages, task_length)
-                    engine.execute(resource_desc, task_desc, io_desc, verbose=False)
+                    try:
+                        engine.execute(resource_desc, task_desc, io_desc, verbose=False)
+                    except Exception, e:
+                        print 'Exception occurred: %s' % e.message
+                        continue
 
                     result = {
                         'run': run,
