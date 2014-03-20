@@ -177,7 +177,17 @@ class Engine(object):
          # Add the previously created ComputePilot to the UnitManager.
         self.umgr.add_pilots(pilot)
 
-        pmgr.wait_pilots(pilot_ids=None, state=sagapilot.states.RUNNING)
+        # Wait until the pilots are either running or failed
+        pilot_states = pmgr.wait_pilots(pilot_ids=None,
+                         state=[sagapilot.states.RUNNING,
+                                sagapilot.states.FAILED,
+                                sagapilot.states.CANCELED])
+        # Check whether there are other states than 'running'
+        if list(set(pilot_states)) != [sagapilot.states.RUNNING]:
+            raise('ERROR: Not all pilots are running: %s' % pilot_states)
+
+        # Now that the pilots started, begin the timing
+        # TODO: This is useful for experiments, but not necessarily for normal running
         self.start = datetime.datetime.now()
         self.launch_initial_tasks()
 
@@ -194,8 +204,16 @@ class Engine(object):
         session.destroy()
 
         self.ting2ted = sum( [x['ts_submitted'] - x['ts_submitting'] for x in self.task_repo.values()], datetime.timedelta())
-        self.sub2run = sum( [x['ts_running'] - x['ts_submitted'] for x in self.task_repo.values()], datetime.timedelta())
-        self.run2fin = sum( [x['ts_done'] - x['ts_running'] for x in self.task_repo.values()], datetime.timedelta())
+        try:
+            self.sub2run = sum( [x['ts_running'] - x['ts_submitted'] for x in self.task_repo.values()], datetime.timedelta())
+        except KeyError:
+            self.sub2run = datetime.timedelta(0)
+
+        try:
+            self.run2fin = sum( [x['ts_done'] - x['ts_running'] for x in self.task_repo.values()], datetime.timedelta())
+        except KeyError:
+            self.run2fin = datetime.timedelta(0)
+
         self.makespan = stop - self.start
 
     #########################################
