@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
                     resource_desc = mtms.Resource_Description()
                     resource_desc.resource = host
-                    resource_desc.runtime = 42 # minutes
+                    resource_desc.runtime = 240 # minutes
                     resource_desc.cores = cores
                     resource_desc.dburl = dburl
 
