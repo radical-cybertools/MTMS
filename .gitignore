@@ -43,3 +43,6 @@ data/
 
 # temp directory
 tmp/
+
+# generated version file
+src/radical/ensemblemd/mtms/VERSION
