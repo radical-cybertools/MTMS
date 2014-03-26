@@ -11,15 +11,12 @@ if __name__ == '__main__':
     #
     # Resource configuration
     #
-    #resource_desc = bigjobasync.Resource(
-    #    name = "india",
-    #    resource = bigjobasync.RESOURCES['FUTUREGRID.INDIA'],
-    #    username = 'marksant',
-    #    runtime = 5,
-    #    cores = 8,
-    #    workdir = '/N/u/marksant/bja'
-    #)
-    resource_desc = {}
+    resource_desc = mtms.Resource_Description()
+    resource_desc.resource = "localhost"
+    resource_desc.runtime = 42 # minutes
+    resource_desc.cores = 1
+    #resource_desc.dburl = 'mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017'
+    resource_desc.dburl = 'mongodb://localhost:27017'
 
     #
     # Application specific runtime characteristics
@@ -135,7 +132,9 @@ if __name__ == '__main__':
     }
 
     engine = mtms.Engine()
-    engine.execute(resource_desc, task_desc, io_desc)
+    engine.execute(resource_desc, task_desc, io_desc, verbose=True)
+
+    print 'Done!'
 
 #
 ###############################################################################
