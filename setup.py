@@ -125,8 +125,9 @@ setup_args = {
     'package_dir' : {'': 'src'},  
 
     'package_data'     : {'': ['*.sh', 'VERSION', 'VERSION.git', ]},
-    'install_requires' : ['setuptools>=1',],
-                         # 'sagagpilot'],
+    'install_requires' : ['setuptools>=1',
+                          'radical.pilot'
+                         ],
 
     'zip_safe'         : False,
 }
