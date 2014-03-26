@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import mtms
+from radical.ensemblemd.mtms import mtms
 
 ###############################################################################
 #
@@ -12,13 +12,15 @@ if __name__ == '__main__':
     dburl = 'mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017'
     runtime = 600 # minutes
 
-    runs = 3
+    runs = 1
     host_parameters = ['localhost']
     #num_stages_parameters = [1,2,4,8,16]
     num_stages_parameters = [8]
 
-    num_cores_parameters = [1,2,4,8]
-    num_tasks_parameters = [1,2,4,8,16]
+    #num_cores_parameters = [1,2,4,8]
+    num_cores_parameters = [1]
+    #num_tasks_parameters = [1,2,4,8,16]
+    num_tasks_parameters = [1,2,4]
 
     #task_length_parameters = [0,1,4,8,16,32,64]
     task_length_parameters = [0]
