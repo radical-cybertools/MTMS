@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import mtms
+from radical.ensemblemd import mtms
 
 ###############################################################################
 #
