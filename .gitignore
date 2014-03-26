@@ -40,3 +40,6 @@ nosetests.xml
 
 # Data directory
 data/
+
+# temp directory
+tmp/
