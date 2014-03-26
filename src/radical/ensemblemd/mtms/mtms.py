@@ -2,7 +2,7 @@ import sys
 import os
 from string import Template
 import datetime
-import sagapilot
+import radical.pilot as rp
 
 
 class Resource_Description():
@@ -68,7 +68,7 @@ class Engine(object):
         task = entry['task']
         stage = entry['stage']
 
-        if state == sagapilot.states.DONE:
+        if state == rp.states.DONE:
             self.log('Task %s is finished.' % task_name)
             self.task_repo[cu_uid]['ts_done'] = datetime.datetime.now()
 
@@ -85,18 +85,18 @@ class Engine(object):
                 self.log('Launching task %s next stage: %d' % (task, next_stage))
                 self.launch_task(task, next_stage)
 
-        elif state == sagapilot.states.RUNNING:
+        elif state == rp.states.RUNNING:
             self.log('Task %s started running.' % task_name)
             self.task_repo[cu_uid]['ts_running'] = datetime.datetime.now()
 
-        elif state == sagapilot.states.FAILED:
+        elif state == rp.states.FAILED:
             self.log('Task %s is failed.' % task_name)
 
-        elif state == sagapilot.states.PENDING or \
-             state == sagapilot.states.PENDING_EXECUTION or \
-             state == sagapilot.states.PENDING_INPUT_TRANSFER or \
-             state == sagapilot.states.NEW or \
-                state == sagapilot.states.PENDING_OUTPUT_TRANSFER:
+        elif state == rp.states.PENDING or \
+             state == rp.states.PENDING_EXECUTION or \
+             state == rp.states.PENDING_INPUT_TRANSFER or \
+             state == rp.states.NEW or \
+                state == rp.states.PENDING_OUTPUT_TRANSFER:
 
             self.log('Task %s is %s.' % (task_name, state))
 
@@ -144,16 +144,16 @@ class Engine(object):
 
         # Create a new session. A session is a set of Pilot Managers
         # and Unit Managers (with associated Pilots and ComputeUnits).
-        session = sagapilot.Session(database_url=resource_desc.dburl)
+        session = rp.Session(database_url=resource_desc.dburl)
         if self.verbose:
             print "Session UID      : {0} ".format(session.uid)
 
         # Add a Pilot Manager
-        pmgr = sagapilot.PilotManager(session=session)
+        pmgr = rp.PilotManager(session=session)
         if self.verbose:
             print "PilotManager UID : {0} ".format( pmgr.uid )
 
-        pilot_desc = sagapilot.ComputePilotDescription()
+        pilot_desc = rp.ComputePilotDescription()
         pilot_desc.resource  = resource_desc.resource
         pilot_desc.runtime   = resource_desc.runtime
         pilot_desc.cores     = resource_desc.cores
@@ -167,7 +167,7 @@ class Engine(object):
         pmgr.register_callback(self.pilot_state_change_cb)
 
         # Combine the ComputePilot, the workload and a scheduler via # a UnitManager object.
-        self.umgr = sagapilot.UnitManager( session=session, scheduler=sagapilot.SCHED_DIRECT_SUBMISSION)
+        self.umgr = rp.UnitManager( session=session, scheduler=rp.SCHED_DIRECT_SUBMISSION)
         if self.verbose:
             print "UnitManager UID  : {0} ".format(self.umgr.uid)
 
@@ -179,11 +179,11 @@ class Engine(object):
 
         # Wait until the pilots are either running or failed
         pilot_states = pmgr.wait_pilots(pilot_ids=None,
-                         state=[sagapilot.states.RUNNING,
-                                sagapilot.states.FAILED,
-                                sagapilot.states.CANCELED], timeout=30)
+                         state=[rp.states.RUNNING,
+                                rp.states.FAILED,
+                                rp.states.CANCELED], timeout=30)
         # Check whether there are other states than 'running'
-        if list(set(pilot_states)) != [sagapilot.states.RUNNING]:
+        if list(set(pilot_states)) != [rp.states.RUNNING]:
             raise Exception('ERROR: Not all pilots are running: %s' % pilot_states)
 
         # Now that the pilots started, begin the timing
@@ -201,7 +201,7 @@ class Engine(object):
         pmgr.cancel_pilots()
 
         # Remove session from database
-        session.destroy()
+        session.close()
 
         self.ting2ted = sum( [x['ts_submitted'] - x['ts_submitting'] for x in self.task_repo.values()], datetime.timedelta())
         try:
@@ -223,7 +223,7 @@ class Engine(object):
     def construct_cud(self, task, stage):
 
         self.log('Constructing CUD for task %s stage %s' % (task, stage))
-        cud = sagapilot.ComputeUnitDescription()
+        cud = rp.ComputeUnitDescription()
 
         # The __TASK__ and __STAGE__ substitutions are arguably not
         # required from an application perspective, # but are
