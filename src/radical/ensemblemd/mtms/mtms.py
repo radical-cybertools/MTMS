@@ -98,6 +98,8 @@ class Engine(object):
 
         elif state == rp.states.FAILED:
             self.log('Task %s is failed.' % task_name)
+            self.log('Not launching next stage for task %s' % task)
+            self.tasks_complete += 1
 
         elif state == rp.states.PENDING or \
              state == rp.states.PENDING_EXECUTION or \
