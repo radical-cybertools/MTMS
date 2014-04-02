@@ -26,47 +26,47 @@ o_cvd=${16}
 o_xst=${17}
 
 # Check input file sizes
-if [[ ! -e $i_conf || `stat --dereference --format=%s $i_conf` -ne 1024 ]]; then
+if [[ `stat --dereference --format=%s $i_conf` -eq 1024 ]]; then
+    echo "INFO: config file $i_conf has correct size!"
+else
     echo "ERROR: config file $i_conf is missing or has wrong size!"
     exit 1
-else
-    echo "INFO: config file $i_conf has correct size!"
 fi
-if [[ ! -e $i_pdb &&`stat --dereference --format=%s $i_pdb` -ne 1048576 ]]; then
+if [[ `stat --dereference --format=%s $i_pdb` -eq 1048576 ]]; then
+    echo "INFO: pdb file $i_pdb has correct size!"
+else
     echo "ERROR: pdb file $i_pdb is missing or has wrong size!"
     exit 1
-else
-    echo "INFO: pdb file $i_pdb has correct size!"
 fi
-if [[ ! -e $i_crd && `stat --dereference --format=%s $i_crd` -ne 1048576 ]]; then
+if [[ `stat --dereference --format=%s $i_crd` -eq 1048576 ]]; then
+    echo "INFO: crd file $i_crd has correct size!"
+else
     echo "ERROR: crd file $i_crd is missing or has wrong size!"
     exit 1
-else
-    echo "INFO: crd file $i_crd has correct size!"
 fi
-if [[ ! -e $i_parm && `stat --dereference --format=%s $i_parm` -ne 1048576 ]]; then
+if [[ `stat --dereference --format=%s $i_parm` -eq 1048576 ]]; then
+    echo "INFO: parm file $i_parm has correct size!"
+else
     echo "ERROR: parm file $i_parm is missing or has wrong size!"
     exit 1
-else
-    echo "INFO: parm file $i_parm has correct size!"
 fi
-if [[ ! -e $i_coor && `stat --dereference --format=%s $i_coor` -ne 1048576 ]]; then
+if [[ `stat --dereference --format=%s $i_coor` -eq 1048576 ]]; then
+    echo "INFO: coor file $i_coor has correct size!"
+else
     echo "ERROR: coor file $i_coor is missing or has wrong size!"
     exit 1
-else
-    echo "INFO: coor file $i_coor has correct size!"
 fi
-if [[ ! -e $i_vel && `stat --dereference --format=%s $i_vel` -ne 1048576 ]]; then
+if [[ `stat --dereference --format=%s $i_vel` -eq 1048576 ]]; then
+    echo "INFO: vel file $i_vel has correct size!"
+else
     echo "ERROR: vel file $i_vel is missing or has wrong size!"
     exit 1
-else
-    echo "INFO: vel file $i_vel has correct size!"
 fi
-if [[ ! -e $i_xsc && `stat --dereference --format=%s $i_xsc` -ne 1048576 ]]; then
+if [[ `stat --dereference --format=%s $i_xsc` -eq 1048576 ]]; then
+    echo "INFO: xsc file $i_xsc has correct size!"
+else
     echo "ERROR: xsc file $i_xsc is missing has wrong size!"
     exit 1
-else
-    echo "INFO: xsc file $i_xsc has correct size!"
 fi
 
 echo "INFO: Creating output files ..."
