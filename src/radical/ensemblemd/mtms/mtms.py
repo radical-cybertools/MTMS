@@ -234,26 +234,33 @@ class Engine(object):
         self.log('Constructing CUD for task %s stage %s' % (task, stage))
         cud = rp.ComputeUnitDescription()
 
+        # Initialize input_data as list so that we can later just append.
+        # TODO: Could this be an issue if there are no later appends?
+        cud.input_data = []
+
         # The __TASK__ and __STAGE__ substitutions are arguably not
         # required from an application perspective, # but are
         # certainly useful for development/debugging purposes.
         task_substitutions = {'__TASK__': task, '__STAGE__': stage}
 
-        for label, pattern in self.io_desc.input_per_task_first_stage.items():
-            tmp = Template(pattern)
-            filename = tmp.substitute(TASK=task, STAGE=stage)
-            if self.verbose:
-                print '### Using initial input file %s as %s' % (filename, label)
-            task_substitutions[label] = filename
+        if stage == 0:
+            for label, pattern in self.io_desc.input_per_task_first_stage.items():
+                tmp = Template(pattern)
+                filename = tmp.substitute(TASK=task, STAGE=stage)
+                if self.verbose:
+                    print '### Using initial input file %s as %s' % (filename, label)
+                task_substitutions[label] = os.path.basename(filename)
+                cud.input_data.append(filename)
 
         for label, pattern in self.io_desc.input_all_tasks_per_stage.items():
             tmp = Template(pattern)
             filename = tmp.substitute(TASK=task, STAGE=stage)
             if self.verbose:
                 print '### Using all task per stage input file %s as %s' % (filename, label)
-            task_substitutions[label] = filename
+            task_substitutions[label] = os.path.basename(filename)
+            cud.input_data.append(filename)
 
-        if stage != self.task_desc.num_stages-1:
+        if stage != self.task_desc.num_stages-1 and stage != 0:
             for entry in self.io_desc.intermediate_output_per_task_per_stage:
                 tmp = Template(entry['pattern'])
                 filename = tmp.substitute(TASK=task, STAGE=stage-1)
@@ -267,11 +274,12 @@ class Engine(object):
             filename = tmp.substitute(TASK=task, STAGE=stage)
             if self.verbose:
                 print '### Using per task all stage input file %s as %s' % (filename, label)
-            task_substitutions[label] = filename
+            task_substitutions[label] = os.path.basename(filename)
+            cud.input_data.append(filename)
 
         for label, pattern in self.io_desc.output_per_task_per_stage.items():
             tmp = Template(pattern)
-            filename = tmp.substitute(TASK=task, STAGE=stage)
+            filename = tmp.substitute(TASK=task.replace('/', '_'), STAGE=stage)
             if self.verbose:
                 print '### Using per task per stage output file %s as %s' % (filename, label)
             task_substitutions[label] = filename
@@ -279,13 +287,13 @@ class Engine(object):
         if stage != self.task_desc.num_stages-1: # If not the latest stage
             for entry in self.io_desc.intermediate_output_per_task_per_stage:
                 tmp = Template(entry['pattern'])
-                filename = tmp.substitute(TASK=task, STAGE=stage)
+                filename = tmp.substitute(TASK=task.replace('/', '_'), STAGE=stage)
                 label = entry['output_label']
                 if self.verbose:
                     print '### Using intermediate per task per stage output file %s as %s' % (filename, label)
                 task_substitutions[label] = filename
 
-        if stage == self.task_desc.num_stages-1: # If this is the (first and) last step
+        if stage == self.task_desc.num_stages-1: # If this is the last step
             for label, pattern in self.io_desc.output_per_task_final_stage.items():
                 tmp = Template(pattern)
                 filename = tmp.substitute(TASK=task, STAGE=stage)
@@ -319,11 +327,6 @@ class Engine(object):
 
         # Environment
         cud.environment =  self.task_desc.environment
-
-        # Input
-        #cud.input_data  = [ "./file1.dat   > file1.dat",
-        #                "./file2.dat   > file2.dat" ]
-        #input = bja_input
 
         # Output
         #cud.output_data = [ "result-%s.dat < STDOUT" % unit_count]
