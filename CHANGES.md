@@ -13,6 +13,7 @@
 * Don't launch next stage on errors in pipeline.
 * Configure Pilot-Manager with xsede and fg resource configurations.
 * Updated namd mockup script.
+* Tested on india (FG) and stampede (XSEDE).
 
 0.2.0 Milestone / Demo 2 Release                       March 26. 2014
 ---------------------------------------------------------------------
