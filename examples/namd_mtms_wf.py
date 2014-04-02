@@ -12,13 +12,18 @@ if __name__ == '__main__':
     # Resource configuration
     #
     resource_desc = mtms.Resource_Description()
-    #resource_desc.resource = "localhost"
-    resource_desc.resource = "india.futuregrid.org"
     resource_desc.runtime = 42 # minutes
     resource_desc.cores = 1
-    #resource_desc.dburl = 'mongodb://localhost:27017'
-    resource_desc.configs = 'file:///Users/mark/proj/mtms/tmp/futuregrid.json'
 
+    #resource_desc.resource = 'localhost'
+    #resource_desc.dburl = 'mongodb://localhost:27017'
+
+    resource_desc.resource = 'stampede.tacc.utexas.edu'
+    EXECUTABLE = '/home1/01740/marksant/bin/namd_mockup_small.sh'
+
+    #resource_desc.configs = 'file:///Users/mark/proj/mtms/tmp/futuregrid.json'
+    #resource_desc.resource = "india.futuregrid.org"
+    #EXECUTABLE = '/N/u/marksant/bin/namd_mockup_small.sh'
 
 
 
@@ -39,7 +44,6 @@ if __name__ == '__main__':
     #EXECUTABLE = '/bin/echo'
     #EXECUTABLE = '/bin/true'
     #EXECUTABLE = '/bin/false'
-    EXECUTABLE = '/N/u/marksant/bin/namd_mockup_small.sh'
     INPUT_PREFIX = '/Users/mark/proj/mtms/data'
 
 
