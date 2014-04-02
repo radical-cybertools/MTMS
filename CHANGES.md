@@ -9,6 +9,10 @@
 0.3.0 Milestone / Demo 3 Release                       April 16. 2014
 ---------------------------------------------------------------------
 
+* Support staging of input files.
+* Don't launch next stage on errors in pipeline.
+* Configure Pilot-Manager with xsede and fg resource configurations.
+* Updated namd mockup script.
 
 0.2.0 Milestone / Demo 2 Release                       March 26. 2014
 ---------------------------------------------------------------------
