@@ -144,7 +144,7 @@ class Engine(object):
         if self.verbose:
             print '### %s ### %s' % (cum, msg)
 
-    def execute(self, resource_desc, task_desc, io_desc, verbose=False):
+    def execute(self, resource_desc, task_desc, io_desc, verbose=False, pm_timeout=None):
 
         self.verbose = verbose
 
@@ -190,7 +190,7 @@ class Engine(object):
         pilot_states = pmgr.wait_pilots(pilot_ids=None,
                          state=[rp.states.RUNNING,
                                 rp.states.FAILED,
-                                rp.states.CANCELED], timeout=30)
+                                rp.states.CANCELED], timeout=pm_timeout)
         # Check whether there are other states than 'running'
         if list(set(pilot_states)) != [rp.states.RUNNING]:
             raise Exception('ERROR: Not all pilots are running: %s' % pilot_states)
