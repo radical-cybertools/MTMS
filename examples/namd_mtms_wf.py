@@ -12,11 +12,15 @@ if __name__ == '__main__':
     # Resource configuration
     #
     resource_desc = mtms.Resource_Description()
-    resource_desc.resource = "localhost"
+    #resource_desc.resource = "localhost"
+    resource_desc.resource = "india.futuregrid.org"
     resource_desc.runtime = 42 # minutes
     resource_desc.cores = 1
-    #resource_desc.dburl = 'mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017'
-    resource_desc.dburl = 'mongodb://localhost:27017'
+    #resource_desc.dburl = 'mongodb://localhost:27017'
+    resource_desc.configs = 'file:///Users/mark/proj/mtms/tmp/futuregrid.json'
+
+
+
 
     #
     # Application specific runtime characteristics
@@ -32,7 +36,11 @@ if __name__ == '__main__':
     TASK_SIM_TIME = 1
     # Executable to run for every task
     #EXECUTABLE = 'namd-mockup.sh'
-    EXECUTABLE = '/bin/echo'
+    #EXECUTABLE = '/bin/echo'
+    #EXECUTABLE = '/bin/true'
+    #EXECUTABLE = '/bin/false'
+    EXECUTABLE = '/N/u/marksant/bin/namd_mockup_small.sh'
+    INPUT_PREFIX = '/Users/mark/proj/mtms/data'
 
 
     #
@@ -42,11 +50,9 @@ if __name__ == '__main__':
 
     # The number of dynamic steps per system
     NUM_STEPS = SIM_TRAJ_TIME / TASK_SIM_TIME
-    # Total number of systems to model, paper uses 105
-    NUM_SYSTEMS = NUM_CHRS * NUM_LOCS
 
     task_desc = mtms.Task_Description()
-    task_desc.tasks = range(NUM_SYSTEMS) # Could be any set of "items"
+    task_desc.tasks = ['%d/%d' % (i,j) for i in range(NUM_CHRS) for j in range(NUM_LOCS)]
     task_desc.num_stages = NUM_STEPS
     task_desc.executable = EXECUTABLE
     task_desc.arguments = '${__TASK__} ${__STAGE__} ${i_conf} ${i_pdb} ${i_crd} ${i_parm} ${i_coor} ${i_vel} ${i_xsc} ${o_coor} ${o_vel} ${o_xsc} ${o_out} ${o_err} ${o_dcd} ${o_cvd} ${o_xst}'
@@ -61,9 +67,9 @@ if __name__ == '__main__':
     #
     #
     io_desc.input_per_task_first_stage = {
-        'i_coor': 'mineq-${TASK}.coor',
-        'i_vel': 'mineq-${TASK}.vel',
-        'i_xsc': 'mineq-${TASK}.xsc'
+        'i_coor': '%s/${TASK}/min-eq.coor' % INPUT_PREFIX,
+        'i_vel': '%s/${TASK}/min-eq.vel' % INPUT_PREFIX,
+        'i_xsc': '%s/${TASK}/min-eq.xsc' % INPUT_PREFIX
     }
 
     #
@@ -71,7 +77,7 @@ if __name__ == '__main__':
     #     - conf_1 .. conf_D
     #
     io_desc.input_all_tasks_per_stage = {
-        'i_conf': 'dyn-${STAGE}.conf'
+        'i_conf': '%s/dyn-conf-files/dyn${STAGE}.conf' % (INPUT_PREFIX)
     }
 
     #
@@ -82,9 +88,9 @@ if __name__ == '__main__':
     #     - crc[S]
     #
     io_desc.input_per_task_all_stages = {
-        'i_pdb': 'sys-${TASK}.pdb',
-        'i_parm': 'sys-${TASK}.parm',
-        'i_crd': 'sys-${TASK}.crd'
+        'i_pdb': '%s/${TASK}/sys.pdb' % INPUT_PREFIX,
+        'i_parm': '%s/${TASK}/sys.parm' % INPUT_PREFIX,
+        'i_crd': '%s/${TASK}/sys.crd' % INPUT_PREFIX
     }
 
     #
