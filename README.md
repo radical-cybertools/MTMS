@@ -33,7 +33,7 @@ This should print a version number. If you get an import error, get in touch wit
 This is the generic Multi-Task Multi-Stage library
 
 ```python
-import mtms
+from radical.ensemblemd import mtms
 
 res = mtms.Resource_Description()
 io = mtms.IO_Description()
