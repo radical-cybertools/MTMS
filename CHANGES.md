@@ -10,10 +10,12 @@
 ---------------------------------------------------------------------
 
 * Support staging of input files.
-* Don't launch next stage on errors in pipeline.
+* Do not launch next stage on errors in pipeline.
 * Configure Pilot-Manager with xsede and fg resource configurations.
 * Updated namd mockup script.
 * Tested on india (FG) and stampede (XSEDE).
+* Test suite integrated.
+* Jenkins tests enabled at: http://vm2.saga-project.org:8080/job/mtms/
 
 0.2.0 Milestone / Demo 2 Release                       March 26. 2014
 ---------------------------------------------------------------------
