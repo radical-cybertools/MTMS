@@ -22,11 +22,21 @@ cd MTMS
 python setup.py install
 ```
 
-To verify that the installation was successful you can run:
+To verify quickly that the installation was successful you can run:
 ```bash
 python -c 'import radical.ensemblemd.mtms as mtms; print mtms.version'
 ```
 This should print a version number. If you get an import error, get in touch with us.
+
+## Tests provided
+
+For a more elaborate testing of the code a suite of tests is available.
+These can be executed by:
+```bash
+python setup.py test
+```
+
+Please report any errors to us, as these should all succeed in theory.
 
 ## The core library
 
