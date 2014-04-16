@@ -9,7 +9,7 @@ class Test(unittest.TestCase):
     def test__allways_succeed(self):
         return
 
-    def _test__simple_workload(self):
+    def test__simple_workload(self):
         NUM_TASKS = 3
         NUM_STAGES = 2
 
