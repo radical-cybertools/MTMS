@@ -105,7 +105,8 @@ class Engine(object):
              state == rp.states.PENDING_EXECUTION or \
              state == rp.states.PENDING_INPUT_TRANSFER or \
              state == rp.states.NEW or \
-                state == rp.states.PENDING_OUTPUT_TRANSFER:
+             state == rp.states.PENDING_OUTPUT_TRANSFER or \
+             state == rp.states.TRANSFERRING_INPUT:
 
             self.log('Task %s is %s.' % (task_name, state))
 
