@@ -338,12 +338,6 @@ class Engine(object):
         # Environment
         cud.environment =  self.task_desc.environment
 
-        # Output
-        # cud.output_data = [ 'STDOUT > STDOUT-%s' % task.replace('/', '_') ] # Works!
-        #cud.output_data = [ 'STDOUT' ] # Does not work
-        #cud.output_data = [ 'STDOUT > STDOUT' ] # works
-        #cud.output_data = [ 'STDOUT < STDOUT' ] # does not work
-
         # Cores
         cud.cores  =  self.task_desc.num_cores
 
