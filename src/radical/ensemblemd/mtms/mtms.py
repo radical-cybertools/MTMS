@@ -284,11 +284,20 @@ class Engine(object):
         for label, pattern in self.io_desc.output_per_task_per_stage.items():
             tmp = Template(pattern)
             filename = tmp.substitute(TASK=task, STAGE=stage)
-            if self.verbose:
-                print '### Using per task per stage output file %s as %s' % (filename, label)
-            basename = os.path.basename(filename)
-            task_substitutions[label] = basename
-            cud.output_data.append('%s > %s' % (basename, filename))
+            if label == 'STDOUT':
+                if self.verbose:
+                    print '### Using per task per stage STDOUT file as %s' % (filename)
+                cud.output_data.append('STDOUT > %s' % filename)
+            elif label == 'STDERR':
+                if self.verbose:
+                    print '### Using per task per stage STDERR file as %s' % (filename)
+                cud.output_data.append('STDERR > %s' % filename)
+            else:
+                if self.verbose:
+                    print '### Using per task per stage output file %s as %s' % (filename, label)
+                basename = os.path.basename(filename)
+                task_substitutions[label] = basename
+                cud.output_data.append('%s > %s' % (basename, filename))
 
         if stage != self.task_desc.num_stages: # If not the latest stage
             for entry in self.io_desc.intermediate_output_per_task_per_stage:

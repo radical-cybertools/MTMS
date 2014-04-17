@@ -18,12 +18,12 @@ o_coor=${10}
 o_vel=${11}
 o_xsc=${12}
 # o_log_du = 167M
-o_out=${13}
-o_err=${14}
+#o_out=${13}
+#o_err=${14}
 # o_ana_du = 3.6G
-o_dcd=${15}
-o_cvd=${16}
-o_xst=${17}
+o_dcd=${13}
+o_cvd=${14}
+o_xst=${15}
 
 # Check input file sizes
 if [[ `stat --dereference --format=%s $i_conf` -eq 1024 ]]; then
@@ -91,13 +91,14 @@ if [ $ret -gt 0 ]; then
     exit $ret
 fi
 # o_log_du = 167M
-dd if=/dev/urandom of=$o_out bs=1M count=1
+#dd if=/dev/urandom of=$o_out bs=1M count=1
+dd if=/dev/urandom of=/dev/stdout bs=1M count=1
 ret=$?
 if [ $ret -gt 0 ]; then
     echo "Writing output out failed ...."
     exit $ret
 fi
-dd if=/dev/urandom of=$o_err bs=1M count=1
+dd if=/dev/urandom of=/dev/stderr bs=1M count=1
 ret=$?
 if [ $ret -gt 0 ]; then
     echo "Writing output err failed ...."

@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     resource_desc.configs = 'file:///Users/mark/proj/mtms/tmp/futuregrid.json'
     resource_desc.resource = "india.futuregrid.org"
-    EXECUTABLE = '/N/u/marksant/bin/namd_mockup_small.sh'
+    EXECUTABLE = '/N/u/marksant/bin/namd_mockup_small-nocheck.sh'
 
 
 
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     task_desc.tasks = ['%d/%d' % (i,j) for i in range(NUM_CHRS) for j in range(NUM_LOCS)]
     task_desc.num_stages = NUM_STEPS
     task_desc.executable = EXECUTABLE
-    task_desc.arguments = '${__TASK__} ${__STAGE__} ${i_conf} ${i_pdb} ${i_crd} ${i_parm} ${i_coor} ${i_vel} ${i_xsc} ${o_coor} ${o_vel} ${o_xsc} ${o_out} ${o_err} ${o_dcd} ${o_cvd} ${o_xst}'
+    task_desc.arguments = '${__TASK__} ${__STAGE__} ${i_conf} ${i_pdb} ${i_crd} ${i_parm} ${i_coor} ${i_vel} ${i_xsc} ${o_coor} ${o_vel} ${o_xsc} ${o_dcd} ${o_cvd} ${o_xst}'
 
     io_desc = mtms.IO_Description()
     #
@@ -103,15 +103,15 @@ if __name__ == '__main__':
     #     - dcd_1[S] .. dcd_D[S]
     #     - cvd_1[S] .. cvd_D[S]
     #     - xst_1[S] .. xst_D[S]
-    #     - out_1[S] .. out_D[S]
-    #     - err_1[S] .. err_D[S]
+    #     - out_1[S] .. out_D[S] # get from stdout
+    #     - err_1[S] .. err_D[S] # get from stderr
     #
     io_desc.output_per_task_per_stage = {
         'o_dcd': '%s/${TASK}/dyn${STAGE}.dcd' % DATA_PREFIX,
         'o_cvd': '%s/${TASK}/dyn${STAGE}.cvd' % DATA_PREFIX,
         'o_xst': '%s/${TASK}/dyn${STAGE}.xst' % DATA_PREFIX,
-        'o_out': '%s/${TASK}/dyn${STAGE}.out' % DATA_PREFIX,
-        'o_err': '%s/${TASK}/dyn${STAGE}.err' % DATA_PREFIX
+        'STDOUT': '%s/${TASK}/dyn${STAGE}.out' % DATA_PREFIX, # STDOUT is special value
+        'STDERR': '%s/${TASK}/dyn${STAGE}.err' % DATA_PREFIX  # STDERR is special value
     }
 
     #
