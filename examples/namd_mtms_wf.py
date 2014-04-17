@@ -18,12 +18,12 @@ if __name__ == '__main__':
     #resource_desc.resource = 'localhost'
     #resource_desc.dburl = 'mongodb://localhost:27017'
 
-    resource_desc.resource = 'stampede.tacc.utexas.edu'
-    EXECUTABLE = '/home1/01740/marksant/bin/namd_mockup_small.sh'
+    #resource_desc.resource = 'stampede.tacc.utexas.edu'
+    #EXECUTABLE = '/home1/01740/marksant/bin/namd_mockup_small.sh'
 
-    #resource_desc.configs = 'file:///Users/mark/proj/mtms/tmp/futuregrid.json'
-    #resource_desc.resource = "india.futuregrid.org"
-    #EXECUTABLE = '/N/u/marksant/bin/namd_mockup_small.sh'
+    resource_desc.configs = 'file:///Users/mark/proj/mtms/tmp/futuregrid.json'
+    resource_desc.resource = "india.futuregrid.org"
+    EXECUTABLE = '/N/u/marksant/bin/namd_mockup_small.sh'
 
 
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     #EXECUTABLE = '/bin/echo'
     #EXECUTABLE = '/bin/true'
     #EXECUTABLE = '/bin/false'
-    INPUT_PREFIX = '/Users/mark/proj/mtms/data'
+    DATA_PREFIX = '/Users/mark/proj/mtms/data'
 
 
     #
@@ -71,9 +71,9 @@ if __name__ == '__main__':
     #
     #
     io_desc.input_per_task_first_stage = {
-        'i_coor': '%s/${TASK}/min-eq.coor' % INPUT_PREFIX,
-        'i_vel': '%s/${TASK}/min-eq.vel' % INPUT_PREFIX,
-        'i_xsc': '%s/${TASK}/min-eq.xsc' % INPUT_PREFIX
+        'i_coor': '%s/${TASK}/min-eq.coor' % DATA_PREFIX,
+        'i_vel': '%s/${TASK}/min-eq.vel' % DATA_PREFIX,
+        'i_xsc': '%s/${TASK}/min-eq.xsc' % DATA_PREFIX
     }
 
     #
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     #     - conf_1 .. conf_D
     #
     io_desc.input_all_tasks_per_stage = {
-        'i_conf': '%s/dyn-conf-files/dyn${STAGE}.conf' % (INPUT_PREFIX)
+        'i_conf': '%s/dyn-conf-files/dyn${STAGE}.conf' % (DATA_PREFIX)
     }
 
     #
@@ -92,9 +92,9 @@ if __name__ == '__main__':
     #     - crc[S]
     #
     io_desc.input_per_task_all_stages = {
-        'i_pdb': '%s/${TASK}/sys.pdb' % INPUT_PREFIX,
-        'i_parm': '%s/${TASK}/sys.parm' % INPUT_PREFIX,
-        'i_crd': '%s/${TASK}/sys.crd' % INPUT_PREFIX
+        'i_pdb': '%s/${TASK}/sys.pdb' % DATA_PREFIX,
+        'i_parm': '%s/${TASK}/sys.parm' % DATA_PREFIX,
+        'i_crd': '%s/${TASK}/sys.crd' % DATA_PREFIX
     }
 
     #
@@ -107,11 +107,11 @@ if __name__ == '__main__':
     #     - err_1[S] .. err_D[S]
     #
     io_desc.output_per_task_per_stage = {
-        'o_dcd': 'dyn-${TASK}-${STAGE}.dcd',
-        'o_cvd': 'dyn-${TASK}-${STAGE}.cvd',
-        'o_xst': 'dyn-${TASK}-${STAGE}.xst',
-        'o_out': 'dyn-${TASK}-${STAGE}.out',
-        'o_err': 'dyn-${TASK}-${STAGE}.err'
+        'o_dcd': '%s/${TASK}/dyn${STAGE}.dcd' % DATA_PREFIX,
+        'o_cvd': '%s/${TASK}/dyn${STAGE}.cvd' % DATA_PREFIX,
+        'o_xst': '%s/${TASK}/dyn${STAGE}.xst' % DATA_PREFIX,
+        'o_out': '%s/${TASK}/dyn${STAGE}.out' % DATA_PREFIX,
+        'o_err': '%s/${TASK}/dyn${STAGE}.err' % DATA_PREFIX
     }
 
     #
@@ -123,9 +123,9 @@ if __name__ == '__main__':
     #
     # TODO: rename to intermediate without "output" ?
     io_desc.intermediate_output_per_task_per_stage = [
-        {'input_label': 'i_coor', 'output_label': 'o_coor', 'pattern': 'dyn-${TASK}-${STAGE}.coor'},
-        {'input_label': 'i_vel', 'output_label': 'o_vel', 'pattern': 'dyn-${TASK}-${STAGE}.vel'},
-        {'input_label': 'i_xsc', 'output_label': 'o_xsc', 'pattern': 'dyn-${TASK}-${STAGE}.xsc'}
+        {'input_label': 'i_coor', 'output_label': 'o_coor', 'pattern': '%s/${TASK}/dyn${STAGE}.coor' % DATA_PREFIX},
+        {'input_label': 'i_vel', 'output_label': 'o_vel', 'pattern': '%s/${TASK}/dyn${STAGE}.vel' % DATA_PREFIX},
+        {'input_label': 'i_xsc', 'output_label': 'o_xsc', 'pattern': '%s/${TASK}/dyn${STAGE}.xsc' % DATA_PREFIX}
     ]
 
     #
@@ -136,9 +136,9 @@ if __name__ == '__main__':
     #     - xsc[S]
     #
     io_desc.output_per_task_final_stage = {
-        'o_coor': 'dyn-${TASK}-${STAGE}.coor',
-        'o_vel': 'dyn-${TASK}-${STAGE}.vel',
-        'o_xsc': 'dyn-${TASK}-${STAGE}.xsc'
+        'o_coor': '%s/${TASK}/dyn${STAGE}.coor' % DATA_PREFIX,
+        'o_vel': '%s/${TASK}/dyn${STAGE}.vel' % DATA_PREFIX,
+        'o_xsc': '%s/${TASK}/dyn${STAGE}.xsc' % DATA_PREFIX
     }
 
     engine = mtms.Engine()
