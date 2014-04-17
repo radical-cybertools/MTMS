@@ -106,7 +106,8 @@ class Engine(object):
              state == rp.states.PENDING_INPUT_TRANSFER or \
              state == rp.states.NEW or \
              state == rp.states.PENDING_OUTPUT_TRANSFER or \
-             state == rp.states.TRANSFERRING_INPUT:
+             state == rp.states.TRANSFERRING_INPUT or \
+             state == rp.states.TRANSFERRING_OUTPUT:
 
             self.log('Task %s is %s.' % (task_name, state))
 
@@ -238,6 +239,7 @@ class Engine(object):
         # Initialize input_data as list so that we can later just append.
         # TODO: Could this be an issue if there are no later appends?
         cud.input_data = []
+        cud.output_data = []
 
         # The __TASK__ and __STAGE__ substitutions are arguably not
         # required from an application perspective, # but are
@@ -261,14 +263,15 @@ class Engine(object):
             task_substitutions[label] = os.path.basename(filename)
             cud.input_data.append(filename)
 
-        if stage != self.task_desc.num_stages-1 and stage != 0:
+        if stage != 0:
             for entry in self.io_desc.intermediate_output_per_task_per_stage:
                 tmp = Template(entry['pattern'])
                 filename = tmp.substitute(TASK=task, STAGE=stage-1)
                 label = entry['input_label']
                 if self.verbose:
                     print '### Using intermediate per task per stage input file %s as %s' % (filename, label)
-                task_substitutions[label] = filename
+                task_substitutions[label] = os.path.basename(filename)
+                cud.input_data.append(filename)
 
         for label, pattern in self.io_desc.input_per_task_all_stages.items():
             tmp = Template(pattern)
@@ -280,19 +283,23 @@ class Engine(object):
 
         for label, pattern in self.io_desc.output_per_task_per_stage.items():
             tmp = Template(pattern)
-            filename = tmp.substitute(TASK=task.replace('/', '_'), STAGE=stage)
+            filename = tmp.substitute(TASK=task, STAGE=stage)
             if self.verbose:
                 print '### Using per task per stage output file %s as %s' % (filename, label)
-            task_substitutions[label] = filename
+            basename = os.path.basename(filename)
+            task_substitutions[label] = basename
+            cud.output_data.append('%s > %s' % (basename, filename))
 
         if stage != self.task_desc.num_stages-1: # If not the latest stage
             for entry in self.io_desc.intermediate_output_per_task_per_stage:
                 tmp = Template(entry['pattern'])
-                filename = tmp.substitute(TASK=task.replace('/', '_'), STAGE=stage)
+                filename = tmp.substitute(TASK=task, STAGE=stage)
                 label = entry['output_label']
                 if self.verbose:
                     print '### Using intermediate per task per stage output file %s as %s' % (filename, label)
-                task_substitutions[label] = filename
+                basename = os.path.basename(filename)
+                task_substitutions[label] = basename
+                cud.output_data.append('%s > %s' % (basename, filename))
 
         if stage == self.task_desc.num_stages-1: # If this is the last step
             for label, pattern in self.io_desc.output_per_task_final_stage.items():
@@ -300,7 +307,9 @@ class Engine(object):
                 filename = tmp.substitute(TASK=task, STAGE=stage)
                 if self.verbose:
                     print '### Using per task final stage output file %s as %s' % (filename, label)
-                task_substitutions[label] = filename
+                basename = os.path.basename(filename)
+                task_substitutions[label] = basename
+                cud.output_data.append('%s > %s' % (basename, filename))
 
         if self.task_desc.executable:
             if not self.task_desc.arguments:
@@ -330,8 +339,10 @@ class Engine(object):
         cud.environment =  self.task_desc.environment
 
         # Output
-        #cud.output_data = [ "result-%s.dat < STDOUT" % unit_count]
-        #output = bja_output,
+        # cud.output_data = [ 'STDOUT > STDOUT-%s' % task.replace('/', '_') ] # Works!
+        #cud.output_data = [ 'STDOUT' ] # Does not work
+        #cud.output_data = [ 'STDOUT > STDOUT' ] # works
+        #cud.output_data = [ 'STDOUT < STDOUT' ] # does not work
 
         # Cores
         cud.cores  =  self.task_desc.num_cores
