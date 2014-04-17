@@ -84,7 +84,7 @@ class Engine(object):
             # # print 'Details: ', cu.execution_details()
             #print 'Log:', cu.log
 
-            if stage == self.task_desc.num_stages - 1:
+            if stage == self.task_desc.num_stages:
                 self.log('Last stage (%d) reached for task %s ...' % (stage, task_name))
                 self.tasks_complete += 1
             else:
@@ -116,7 +116,7 @@ class Engine(object):
 
 
     def launch_initial_tasks(self):
-        stage = 0
+        stage = 1
         for task in self.task_desc.tasks:
             self.log('Performing initial stage for task %s' % task)
             self.launch_task(task, stage)
@@ -246,7 +246,7 @@ class Engine(object):
         # certainly useful for development/debugging purposes.
         task_substitutions = {'__TASK__': task, '__STAGE__': stage}
 
-        if stage == 0:
+        if stage == 1:
             for label, pattern in self.io_desc.input_per_task_first_stage.items():
                 tmp = Template(pattern)
                 filename = tmp.substitute(TASK=task, STAGE=stage)
@@ -263,7 +263,7 @@ class Engine(object):
             task_substitutions[label] = os.path.basename(filename)
             cud.input_data.append(filename)
 
-        if stage != 0:
+        if stage != 1:
             for entry in self.io_desc.intermediate_output_per_task_per_stage:
                 tmp = Template(entry['pattern'])
                 filename = tmp.substitute(TASK=task, STAGE=stage-1)
@@ -290,7 +290,7 @@ class Engine(object):
             task_substitutions[label] = basename
             cud.output_data.append('%s > %s' % (basename, filename))
 
-        if stage != self.task_desc.num_stages-1: # If not the latest stage
+        if stage != self.task_desc.num_stages: # If not the latest stage
             for entry in self.io_desc.intermediate_output_per_task_per_stage:
                 tmp = Template(entry['pattern'])
                 filename = tmp.substitute(TASK=task, STAGE=stage)
@@ -301,7 +301,7 @@ class Engine(object):
                 task_substitutions[label] = basename
                 cud.output_data.append('%s > %s' % (basename, filename))
 
-        if stage == self.task_desc.num_stages-1: # If this is the last step
+        if stage == self.task_desc.num_stages: # If this is the last step
             for label, pattern in self.io_desc.output_per_task_final_stage.items():
                 tmp = Template(pattern)
                 filename = tmp.substitute(TASK=task, STAGE=stage)
