@@ -53,7 +53,18 @@ engine = mtms.Engine()
 engine.execute(res, tasks, io)
 ```
 
-## Example: NAMD workflow
+-## Hello World Example
+
+```python
+task_desc = mtms.Task_Description()
+task_desc.tasks = ['task-%d' % i+1) for i in range(10)]
+task_desc.num_stages = 42
+task_desc.executable = '/bin/cat'
+task_desc.arguments = '${my_input} > ${my_output}
+```
+
+
+## Real World Example: NAMD workflow
 
 This is the NAMD workflow specific example that makes use of the mtms library.
 To run the supplied example, you can run:
