@@ -56,11 +56,27 @@ engine.execute(res, tasks, io)
 
 ## Example: NAMD workflow
 
-This is the NAMD workflow specific example that makes use of the mtms library.
-To run the supplied example, you can run:
+This is a NAMD workflow specific example that makes use of the mtms library.
+To run the supplied example, you can need to perform the following steps (from
+the /tmp/MTMS directory created earlier).
 
+First to create a dummy set of input data files:
+```bash
+./performance/populate_data_directory_small.sh
+```
+This creates a /tmp/MTMS/data directory that will be used during the
+experiment.
+
+To start the experiment, run the following command from the same directory.
 ```bash
 python examples/namd_mtms_wf.py
 ```
+
+This assumes you have an account on the TACC XSEDE Stampede cluster. If not,
+you can configure to run on another cluster or on your localhost by changing
+the code at line #22.
+
 This should give you the output of a verbose run of an MTMS application.
-Please look at the example to get a feeling for how to write your own.
+Please look at the example code to get a feeling for how to write your own.
+Note that for "portability" this workflow doesn't run the real namd binary, but
+other than that the workflow is representative.
