@@ -190,11 +190,11 @@ class Engine(object):
 
         # Wait until the pilots are either running or failed
         pilot_states = pmgr.wait_pilots(pilot_ids=None,
-                         state=[rp.states.EXECUTING,
+                         state=[rp.states.ACTIVE,
                                 rp.states.FAILED,
                                 rp.states.CANCELED], timeout=pm_timeout)
         # Check whether there are other states than 'running'
-        if list(set(pilot_states)) != [rp.states.EXECUTING]:
+        if list(set(pilot_states)) != [rp.states.ACTIVE]:
             raise Exception('ERROR: Not all pilots are running: %s' % pilot_states)
 
         # Now that the pilots started, begin the timing
