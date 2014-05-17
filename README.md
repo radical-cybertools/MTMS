@@ -80,3 +80,5 @@ This should give you the output of a verbose run of an MTMS application.
 Please look at the example code to get a feeling for how to write your own.
 Note that for "portability" this workflow doesn't run the real namd binary, but
 other than that the workflow is representative.
+Depending on network speed and queueing times, this should take around 5
+minutes to execute.
