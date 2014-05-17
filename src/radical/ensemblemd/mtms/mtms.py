@@ -92,7 +92,7 @@ class Engine(object):
                 self.log('Launching task %s next stage: %d' % (task, next_stage))
                 self.launch_task(task, next_stage)
 
-        elif state == rp.states.RUNNING:
+        elif state == rp.states.EXECUTING:
             self.log('Task %s started running.' % task_name)
             self.task_repo[cu_uid]['ts_running'] = datetime.datetime.now()
 
@@ -190,11 +190,11 @@ class Engine(object):
 
         # Wait until the pilots are either running or failed
         pilot_states = pmgr.wait_pilots(pilot_ids=None,
-                         state=[rp.states.RUNNING,
+                         state=[rp.states.EXECUTING,
                                 rp.states.FAILED,
                                 rp.states.CANCELED], timeout=pm_timeout)
         # Check whether there are other states than 'running'
-        if list(set(pilot_states)) != [rp.states.RUNNING]:
+        if list(set(pilot_states)) != [rp.states.EXECUTING]:
             raise Exception('ERROR: Not all pilots are running: %s' % pilot_states)
 
         # Now that the pilots started, begin the timing
