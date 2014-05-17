@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from radical.ensemblemd import mtms
+import os
 
 ###############################################################################
 #
@@ -19,8 +20,10 @@ if __name__ == '__main__':
     #resource_desc.dburl = 'mongodb://localhost:27017'
 
     resource_desc.resource = 'stampede.tacc.utexas.edu'
+    #resource_desc.resource = 'india.futuregrid.org'
+
     #EXECUTABLE = '/home1/01740/marksant/bin/namd_mockup_small.sh'
-    EXECUTABLE = '/home1/01740/marksant/bin/namd_mockup_small-nocheck.sh'
+    EXECUTABLE = './namd_mockup_small-nocheck.sh'
 
     #EXECUTABLE = '/N/u/marksant/bin/namd_mockup_small-nocheck.sh'
 
@@ -41,8 +44,8 @@ if __name__ == '__main__':
     #EXECUTABLE = '/bin/echo'
     #EXECUTABLE = '/bin/true'
     #EXECUTABLE = '/bin/false'
-    DATA_PREFIX = '/Users/mark/proj/mtms/data'
-
+    DATA_PREFIX = os.path.join(os.getcwd(), 'data')
+    EXE_LOCATION = os.path.join(os.getcwd(), 'performance', 'namd_mockup_small-nocheck.sh')
 
     #
     # !!! No user-servicable parts below !!!
@@ -78,7 +81,8 @@ if __name__ == '__main__':
     #     - conf_1 .. conf_D
     #
     io_desc.input_all_tasks_per_stage = {
-        'i_conf': '%s/dyn-conf-files/dyn${STAGE}.conf' % (DATA_PREFIX)
+        'i_conf': '%s/dyn-conf-files/dyn${STAGE}.conf' % (DATA_PREFIX),
+        'i_exe': '%s' % (EXE_LOCATION)
     }
 
     #
