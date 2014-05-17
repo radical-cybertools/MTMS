@@ -40,7 +40,8 @@ Please report any errors to us, as these should all succeed in theory.
 
 ## The core library
 
-This is the generic Multi-Task Multi-Stage library
+This is the generic Multi-Task Multi-Stage library.
+The minimal structure of the API and its usage is displayed below.
 
 ```python
 from radical.ensemblemd import mtms
@@ -53,37 +54,7 @@ engine = mtms.Engine()
 engine.execute(res, tasks, io)
 ```
 
-## Hello World Example
-
-```python
-task_desc = mtms.Task_Description()
-task_desc.tasks = ['task-%d' % i+1) for i in range(10)]
-task_desc.num_stages = 42
-task_desc.executable = '/bin/date'
-task_desc.arguments = '${my_output}'
-```
-
-```python
-io_desc = mtms.IO_Description()
-io_desc.input_per_task_first_stage = {
-    'my_input': 'my_input-${TASK}.txt'
-}
-```
-
-```python
-io_desc.intermediate_output_per_task_per_stage = [
-    {'input_label': 'my_input', 'output_label': 'my_output', 'pattern': '${TASK}-${STAGE}.txt'}
-    ]
-```
-
-```python
-io_desc.output_per_task_final_stage = {
-    'my_output': '${TASK}-${STAGE}.txt'
-}
-```
-
-
-## Real World Example: NAMD workflow
+## Example: NAMD workflow
 
 This is the NAMD workflow specific example that makes use of the mtms library.
 To run the supplied example, you can run:
