@@ -17,7 +17,7 @@ source /tmp/ve/bin/activate
 Currently MTMS is only installable from source:
 ```bash
 cd /tmp
-git clone git@github.com:radical-cybertools/MTMS.git
+git clone https://github.com/radical-cybertools/MTMS.git
 cd MTMS
 python setup.py install
 ```
