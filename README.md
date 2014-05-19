@@ -60,6 +60,23 @@ This is a NAMD workflow specific example that makes use of the mtms library.
 To run the supplied example, you can need to perform the following steps (from
 the /tmp/MTMS directory created earlier).
 
+The experiment configuration is based on the paper
+["Scalable online comparative genomics of mononucleosomes: a BigJob"](http://dl.acm.org/citation.cfm?id=2484819).
+The script uses the hierarchical directory layout as in the paper,
+the first tier represents 5 chromosome sites, and the second tier represents 21 locations along the DNA sequence representing the start of the nucleosome.
+For every location 20 simulations of 1ns are performed.
+
+To cut execution time of this example, the number of chromosomes is 2, with each just 1 location and the number of simulations per location is 3.
+This leads to 6 MD simulations instead of 2100.
+Of course you are free to change these numbers, you can do that starting at line #34 of examples/namd_mtms_wf.py.
+
+The current script assumes you have an account on the TACC XSEDE Stampede cluster.
+If not, you can configure to run on another cluster or on your localhost by changing
+the code at line examples/namd_mtms_wf.py#22.
+
+Note that for "portability" this workflow doesn't run the real namd binary, but
+other than that the workflow is completely genuine.
+
 First to create a dummy set of input data files:
 ```bash
 ./performance/populate_data_directory_small.sh
@@ -71,14 +88,8 @@ To start the experiment, run the following command from the same directory.
 ```bash
 python examples/namd_mtms_wf.py
 ```
-
-This assumes you have an account on the TACC XSEDE Stampede cluster. If not,
-you can configure to run on another cluster or on your localhost by changing
-the code at line #22.
-
-This should give you the output of a verbose run of an MTMS application.
-Please look at the example code to get a feeling for how to write your own.
-Note that for "portability" this workflow doesn't run the real namd binary, but
-other than that the workflow is representative.
 Depending on network speed and queueing times, this should take around 5
 minutes to execute.
+
+All with all this should give you the output of a verbose run of an MTMS application.
+Please look at the example code to get a feeling for how to use MTMS for your own application.
