@@ -30,4 +30,4 @@ class Test(unittest.TestCase):
         io_desc = mtms.IO_Description()
 
         engine = mtms.Engine()
-        engine.execute(resource_desc, task_desc, io_desc, verbose=False)
+        engine.execute(resource_desc, task_desc, io_desc, verbose=False, pm_timeout=60)
