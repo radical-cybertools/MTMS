@@ -14,10 +14,6 @@ class Resource_Description():
         self.runtime = 42 # minutes
         self.cores = 1
         self.dburl = 'mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017'
-        self.configs = [
-            'https://raw.github.com/saga-project/saga-pilot/master/configs/futuregrid.json',
-            'https://raw.github.com/saga-project/saga-pilot/master/configs/xsede.json',
-        ]
 
 
 class Task_Description():
@@ -160,7 +156,7 @@ class Engine(object):
             print "Session UID      : {0} ".format(session.uid)
 
         # Add a Pilot Manager
-        pmgr = rp.PilotManager(session=session, resource_configurations=resource_desc.configs)
+        pmgr = rp.PilotManager(session=session)
         if self.verbose:
             print "PilotManager UID : {0} ".format( pmgr.uid )
 
