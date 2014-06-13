@@ -91,14 +91,13 @@ if [ $ret -gt 0 ]; then
     exit $ret
 fi
 # o_log_du = 167M
-#dd if=/dev/urandom of=$o_out bs=1M count=1
-dd if=/dev/urandom of=/dev/stdout bs=1M count=1
+dd if=/dev/urandom bs=1M count=1
 ret=$?
 if [ $ret -gt 0 ]; then
     echo "Writing output out failed ...."
     exit $ret
 fi
-dd if=/dev/urandom of=/dev/stderr bs=1M count=1
+dd if=/dev/urandom bs=1M count=1 >&2
 ret=$?
 if [ $ret -gt 0 ]; then
     echo "Writing output err failed ...."

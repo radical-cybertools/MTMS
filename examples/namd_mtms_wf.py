@@ -19,11 +19,20 @@ if __name__ == '__main__':
     #resource_desc.resource = 'localhost'
     #resource_desc.dburl = 'mongodb://localhost:27017'
 
+    # Master
     resource_desc.resource = 'stampede.tacc.utexas.edu'
     #resource_desc.resource = 'india.futuregrid.org'
 
     #EXECUTABLE = '/home1/01740/marksant/bin/namd_mockup_small.sh'
     EXECUTABLE = './namd_mockup_small-nocheck.sh'
+
+    # Devel
+    #resource_desc.resource = 'stampede.tacc.utexas.edu'
+    #EXECUTABLE = '/home1/01740/marksant/bin/namd_mockup_small-nocheck.sh'
+
+    #resource_desc.configs = 'file:///Users/mark/proj/mtms/tmp/futuregrid.json'
+    #resource_desc.resource = "india.futuregrid.org"
+    #EXECUTABLE = '/N/u/marksant/bin/namd_mockup_small.sh'
 
     #EXECUTABLE = '/N/u/marksant/bin/namd_mockup_small-nocheck.sh'
 
