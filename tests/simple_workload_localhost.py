@@ -24,8 +24,7 @@ class Test(unittest.TestCase):
         task_desc = mtms.Task_Description()
         task_desc.tasks = ['task-%d' % i for i in range(NUM_TASKS)]
         task_desc.num_stages = NUM_STAGES
-        task_desc.executable = '/bin/echo'
-        task_desc.arguments = 'Hello, I am task ${__TASK__} at stage ${__STAGE__}.'
+        task_desc.kernel = 'TEST'
 
         io_desc = mtms.IO_Description()
 
