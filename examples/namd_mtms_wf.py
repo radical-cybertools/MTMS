@@ -79,7 +79,6 @@ if __name__ == '__main__':
     #
     io_desc.input_all_tasks_per_stage = {
         'i_conf': '%s/dyn-conf-files/dyn${STAGE}.conf' % (DATA_PREFIX),
-        'i_exe': '%s' % (EXE_LOCATION)
     }
 
     #
