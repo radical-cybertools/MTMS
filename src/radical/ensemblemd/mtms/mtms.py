@@ -3,8 +3,7 @@ import os
 from string import Template
 import datetime
 import radical.pilot as rp
-
-
+from radical.ensemblemd.mdkernels import MDTaskDescription
 
 
 class Resource_Description():
@@ -20,10 +19,9 @@ class Task_Description():
     def __init__(self):
 
         # Task execution description
-        self.executable = None
+        self.kernel = None
         self.arguments = None
-        self.num_cores = 1
-        self.environment = {}
+        self.cores = 1
 
         # Task "shape" definition
         self.tasks = None # List of elements / TODO: NEED A BETTER NAME!!
@@ -147,6 +145,7 @@ class Engine(object):
 
         self.io_desc = io_desc
         self.task_desc = task_desc
+        self.resource_desc = resource_desc
 
         # Create a new session. A session is a set of Pilot Managers
         # and Unit Managers (with associated Pilots and ComputeUnits).
@@ -315,34 +314,41 @@ class Engine(object):
                 task_substitutions[label] = basename
                 cud.output_data.append('%s > %s' % (basename, filename))
 
-        if self.task_desc.executable:
-            if not self.task_desc.arguments:
-                if self.verbose:
-                    print '### Will execute "%s"' % self.task_desc.executable
-                arguments = None
-            else:
-                tmp = Template(self.task_desc.arguments)
-                arguments = tmp.substitute(task_substitutions)
-                if self.verbose:
-                    print '### Will execute "%s %s"' % (self.task_desc.executable, arguments)
-        else:
-            print '### ERROR: Executable not specified!!'
-
 
         # Name
         cud.name = "mtms-task-%s-%s" % (task, stage)
 
-        # Executable
-        cud.executable = self.task_desc.executable
+        # Cores
+        cud.cores  =  self.task_desc.cores
+
+        # Build MDTaskDescription from kernel name
+        mdtd = MDTaskDescription()
+
+        if not self.task_desc.kernel:
+            raise Exception('Kernel not specified.')
+        mdtd.kernel = self.task_desc.kernel
+
+        # Bind to resource
+        mdtd_bound = mdtd.bind(resource=self.resource_desc.resource)
+
+        # Fill in CUD
+        cud.environment = mdtd_bound.environment
+        cud.pre_exec = mdtd_bound.pre_exec
+        cud.executable = mdtd_bound.executable
+        cud.mpi = mdtd_bound.mpi
+
+        if not self.task_desc.arguments:
+            if self.verbose:
+                print '### Will execute "%s"' % cud.executable
+            arguments = None
+        else:
+            tmp = Template(self.task_desc.arguments)
+            arguments = tmp.substitute(task_substitutions)
+            if self.verbose:
+                print '### Will execute "%s %s"' % (cud.executable, arguments)
 
         # Arguments
         if arguments:
             cud.arguments = arguments
-
-        # Environment
-        cud.environment =  self.task_desc.environment
-
-        # Cores
-        cud.cores  =  self.task_desc.num_cores
 
         return cud

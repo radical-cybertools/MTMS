@@ -14,50 +14,38 @@ if __name__ == '__main__':
     #
     resource_desc = mtms.Resource_Description()
     resource_desc.runtime = 42 # minutes
-    resource_desc.cores = 1
-
+    resource_desc.cores = 32
+    #
+    # Localhost
     #resource_desc.resource = 'localhost'
     #resource_desc.dburl = 'mongodb://localhost:27017'
-
-    # Master
-    resource_desc.resource = 'stampede.tacc.utexas.edu'
-    #resource_desc.resource = 'india.futuregrid.org'
-
-    #EXECUTABLE = '/home1/01740/marksant/bin/namd_mockup_small.sh'
-    EXECUTABLE = './namd_mockup_small-nocheck.sh'
-
-    # Devel
+    #
+    # Stampede
     #resource_desc.resource = 'stampede.tacc.utexas.edu'
-    #EXECUTABLE = '/home1/01740/marksant/bin/namd_mockup_small-nocheck.sh'
-
-    #resource_desc.resource = "india.futuregrid.org"
-    #EXECUTABLE = '/N/u/marksant/bin/namd_mockup_small.sh'
-
-    #EXECUTABLE = '/N/u/marksant/bin/namd_mockup_small-nocheck.sh'
+    #
+    # India
+    resource_desc.resource = 'india.futuregrid.org'
 
     #
     # Application specific runtime characteristics
     #
-
     # Number of chromosomes
-    NUM_CHRS = 2 # exp:5
+    NUM_CHRS = 1 # exp:5
     # Number of locations per chromosome
     NUM_LOCS = 1 # exp:21
     # The time of simulation per system
     SIM_TRAJ_TIME = 3 # exp:20
     # The simulation time per dynamic step
     TASK_SIM_TIME = 1
-    # Executable to run for every task
-    #EXECUTABLE = 'namd-mockup.sh'
-    #EXECUTABLE = '/bin/echo'
-    #EXECUTABLE = '/bin/true'
-    #EXECUTABLE = '/bin/false'
+    # Executable kernel to run for every task
+    KERNEL = 'NAMD'
+    CORES = 16
     DATA_PREFIX = os.path.join(os.getcwd(), 'data')
-    EXE_LOCATION = os.path.join(os.getcwd(), 'performance', 'namd_mockup_small-nocheck.sh')
+    VERBOSE=True
 
+    ######################################################################
     #
     # !!! No user-servicable parts below !!!
-    # (Not completely true, but true enough!)
     #
 
     # The number of dynamic steps per system
@@ -66,8 +54,9 @@ if __name__ == '__main__':
     task_desc = mtms.Task_Description()
     task_desc.tasks = ['%d/%d' % (i,j) for i in range(NUM_CHRS) for j in range(NUM_LOCS)]
     task_desc.num_stages = NUM_STEPS
-    task_desc.executable = EXECUTABLE
-    task_desc.arguments = '${__TASK__} ${__STAGE__} ${i_conf} ${i_pdb} ${i_crd} ${i_parm} ${i_coor} ${i_vel} ${i_xsc} ${o_coor} ${o_vel} ${o_xsc} ${o_dcd} ${o_cvd} ${o_xst}'
+    task_desc.kernel = KERNEL
+    task_desc.arguments = '${i_conf}'
+    task_desc.cores = CORES
 
     io_desc = mtms.IO_Description()
     #
@@ -151,7 +140,7 @@ if __name__ == '__main__':
     }
 
     engine = mtms.Engine()
-    engine.execute(resource_desc, task_desc, io_desc, verbose=True)
+    engine.execute(resource_desc, task_desc, io_desc, verbose=VERBOSE)
 
     print 'Done!'
 
