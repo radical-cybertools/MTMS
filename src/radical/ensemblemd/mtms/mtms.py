@@ -206,7 +206,7 @@ class Engine(object):
         pmgr.cancel_pilots()
 
         # Remove session from database
-        session.close()
+        session.close(delete=False)
 
         self.ting2ted = sum( [x['ts_submitted'] - x['ts_submitting'] for x in self.task_repo.values()], datetime.timedelta())
         try:
