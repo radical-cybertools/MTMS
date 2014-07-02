@@ -10,6 +10,7 @@ class Resource_Description():
     def __init__(self):
         # defaults
         self.resource = "localhost"
+        self.project = None
         self.runtime = 42 # minutes
         self.cores = 1
         self.dburl = 'mongodb://ec2-184-72-89-141.compute-1.amazonaws.com:27017'
@@ -162,6 +163,9 @@ class Engine(object):
         pilot_desc.resource  = resource_desc.resource
         pilot_desc.runtime   = resource_desc.runtime
         pilot_desc.cores     = resource_desc.cores
+
+        if resource_desc.project:
+            pilot_desc.project = resource_desc.project
 
         # Launch the pilot.
         pilot = pmgr.submit_pilots(pilot_desc)
