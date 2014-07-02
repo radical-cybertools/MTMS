@@ -97,14 +97,13 @@ class Engine(object):
             self.log('Not launching next stage for task %s' % task)
             self.tasks_complete += 1
 
-        elif state == rp.states.PENDING or \
-             state == rp.states.PENDING_EXECUTION or \
-             state == rp.states.PENDING_INPUT_TRANSFER or \
-             state == rp.states.NEW or \
-             state == rp.states.PENDING_OUTPUT_TRANSFER or \
-             state == rp.states.TRANSFERRING_INPUT or \
-             state == rp.states.TRANSFERRING_OUTPUT:
-
+        elif state in [rp.states.NEW,
+                       rp.states.PENDING_INPUT_TRANSFER,
+                       rp.states.TRANSFERRING_INPUT,
+                       rp.states.PENDING_EXECUTION,
+                       rp.states.SCHEDULING,
+                       rp.states.PENDING_OUTPUT_TRANSFER,
+                       rp.states.TRANSFERRING_OUTPUT]:
             self.log('Task %s is %s.' % (task_name, state))
 
         else:
