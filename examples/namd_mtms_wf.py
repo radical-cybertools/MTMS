@@ -108,16 +108,16 @@ if __name__ == '__main__':
 
     #
     # SINKS PER SYSTEM(S) PER DYNAMIC STEP(D)
-    # (dcd, cvd, xst, out, err)
+    # (dcd, dvd, xst, out, err)
     #     - dcd_1[S] .. dcd_D[S]
-    #     - cvd_1[S] .. cvd_D[S]
+    #     - dvd_1[S] .. dvd_D[S]
     #     - xst_1[S] .. xst_D[S]
     #     - out_1[S] .. out_D[S] # get from stdout
     #     - err_1[S] .. err_D[S] # get from stderr
     #
     io_desc.output_per_task_per_stage = {
         'o_dcd': '%s/${TASK}/dyn${STAGE}.dcd' % DATA_PREFIX,
-        'o_cvd': '%s/${TASK}/dyn${STAGE}.cvd' % DATA_PREFIX,
+        'o_dvd': '%s/${TASK}/dyn${STAGE}.dvd' % DATA_PREFIX,
         'o_xst': '%s/${TASK}/dyn${STAGE}.xst' % DATA_PREFIX,
         'STDOUT': '%s/${TASK}/dyn${STAGE}.out' % DATA_PREFIX, # STDOUT is special value
         'STDERR': '%s/${TASK}/dyn${STAGE}.err' % DATA_PREFIX  # STDERR is special value
