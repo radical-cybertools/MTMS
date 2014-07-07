@@ -74,6 +74,18 @@ engine = mtms.Engine()
 engine.execute(res, tasks, io)
 ```
 
+## Preparing data on stampede
+
+To prepare the input data on stampede (and save yourself from the data transfers during the tutorial) please follow the instructions below when logged into stampede:
+```bash
+cd $WORK
+mkdir demo
+cd demo
+cp -pr /work/01740/marksant/demo/data_bishop .
+cd data_bishop
+./populate_data_directory_bishop.sh
+```
+
 ## Example: NAMD workflow
 
 This is a NAMD workflow specific example that makes use of the mtms library.
