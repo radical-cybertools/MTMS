@@ -97,12 +97,12 @@ class Engine(object):
             self.tasks_complete += 1
 
         elif state in [rp.states.NEW,
-                       rp.states.PENDING_INPUT_TRANSFER,
-                       rp.states.TRANSFERRING_INPUT,
+                       rp.states.PENDING_INPUT_STAGING,
+                       rp.states.STAGING_INPUT,
                        rp.states.PENDING_EXECUTION,
                        rp.states.SCHEDULING,
-                       rp.states.PENDING_OUTPUT_TRANSFER,
-                       rp.states.TRANSFERRING_OUTPUT]:
+                       rp.states.PENDING_OUTPUT_STAGING,
+                       rp.states.STAGING_OUTPUT]:
             self.log('Task %s is %s.' % (task_name, state))
 
         else:
@@ -153,6 +153,13 @@ class Engine(object):
         session = rp.Session(database_url=resource_desc.dburl)
         if self.verbose:
             print "Session UID      : {0} ".format(session.uid)
+
+        # Find remote fs endpoint
+        res = session.list_resource_configs()
+        if resource_desc.resource in res:
+            rc = res[resource_desc.resource]
+            if 'remote_filesystem_endpoint' in rc:
+                self.remote_fs = rp.Url(rc['remote_filesystem_endpoint'])
 
         # Add a Pilot Manager
         pmgr = rp.PilotManager(session=session)
@@ -234,10 +241,10 @@ class Engine(object):
         self.log('Constructing CUD for task %s stage %s' % (task, stage))
         cud = rp.ComputeUnitDescription()
 
-        # Initialize input_data as list so that we can later just append.
+        # Initialize input and output staging as list so that we can later just append.
         # TODO: Could this be an issue if there are no later appends?
-        cud.input_data = []
-        cud.output_data = []
+        cud.input_staging = []
+        cud.output_staging = []
 
         # The __TASK__ and __STAGE__ substitutions are arguably not
         # required from an application perspective, # but are
@@ -251,7 +258,21 @@ class Engine(object):
                 if self.verbose:
                     print '### Using initial input file %s as %s' % (filename, label)
                 task_substitutions[label] = os.path.basename(filename)
-                cud.input_data.append(filename)
+
+                sd = rp.StagingDirectives()
+                sd.target = os.path.basename(filename)
+
+                url = rp.Url(filename)
+                if url.host == 'localhost' or url.host is None:
+                    sd.source = url
+                    sd.action = rp.TRANSFER
+                elif url.host == self.remote_fs.host:
+                    sd.source = url.path
+                    sd.action = rp.LINK
+                else:
+                    print "### ERROR: Host not supported for this pilot!"
+
+                cud.input_staging.append(sd)
 
         for label, pattern in self.io_desc.input_all_tasks_per_stage.items():
             tmp = Template(pattern)
@@ -259,7 +280,21 @@ class Engine(object):
             if self.verbose:
                 print '### Using all task per stage input file %s as %s' % (filename, label)
             task_substitutions[label] = os.path.basename(filename)
-            cud.input_data.append(filename)
+
+            sd = rp.StagingDirectives()
+            sd.target = os.path.basename(filename)
+
+            url = rp.Url(filename)
+            if url.host == 'localhost' or url.host is None:
+                sd.source = url
+                sd.action = rp.TRANSFER
+            elif url.host == self.remote_fs.host:
+                sd.source = url.path
+                sd.action = rp.LINK
+            else:
+                print "### ERROR: Host not supported for this pilot!"
+
+            cud.input_staging.append(sd)
 
         if stage != 1:
             for entry in self.io_desc.intermediate_output_per_task_per_stage:
@@ -269,7 +304,21 @@ class Engine(object):
                 if self.verbose:
                     print '### Using intermediate per task per stage input file %s as %s' % (filename, label)
                 task_substitutions[label] = os.path.basename(filename)
-                cud.input_data.append(filename)
+
+                sd = rp.StagingDirectives()
+                sd.target = os.path.basename(filename)
+
+                url = rp.Url(filename)
+                if url.host == 'localhost' or url.host is None:
+                    sd.source = url
+                    sd.action = rp.TRANSFER
+                elif url.host == self.remote_fs.host:
+                    sd.source = url.path
+                    sd.action = rp.LINK
+                else:
+                    print "### ERROR: Host not supported for this pilot!"
+
+                cud.input_staging.append(sd)
 
         for label, pattern in self.io_desc.input_per_task_all_stages.items():
             tmp = Template(pattern)
@@ -277,7 +326,21 @@ class Engine(object):
             if self.verbose:
                 print '### Using per task all stage input file %s as %s' % (filename, label)
             task_substitutions[label] = os.path.basename(filename)
-            cud.input_data.append(filename)
+
+            sd = rp.StagingDirectives()
+            sd.target = os.path.basename(filename)
+
+            url = rp.Url(filename)
+            if url.host == 'localhost' or url.host is None:
+                sd.source = url
+                sd.action = rp.TRANSFER
+            elif url.host == self.remote_fs.host:
+                sd.source = url.path
+                sd.action = rp.LINK
+            else:
+                print "### ERROR: Host not supported for this pilot!"
+
+            cud.input_staging.append(sd)
 
         for label, pattern in self.io_desc.output_per_task_per_stage.items():
             tmp = Template(pattern)
@@ -285,17 +348,61 @@ class Engine(object):
             if label == 'STDOUT':
                 if self.verbose:
                     print '### Using per task per stage STDOUT file as %s' % (filename)
-                cud.output_data.append('STDOUT > %s' % filename)
+
+                sd = rp.StagingDirectives()
+                sd.source = 'STDOUT'
+
+                url = rp.Url(filename)
+                if url.host == 'localhost' or url.host is None:
+                    sd.target = url
+                    sd.action = rp.TRANSFER
+                elif url.host == self.remote_fs.host:
+                    sd.target = url.path
+                    sd.action = rp.COPY
+                else:
+                    print "### ERROR: Host not supported for this pilot!"
+
+                cud.output_staging.append(sd)
+
             elif label == 'STDERR':
                 if self.verbose:
                     print '### Using per task per stage STDERR file as %s' % (filename)
-                cud.output_data.append('STDERR > %s' % filename)
+
+                sd = rp.StagingDirectives()
+                sd.source = 'STDERR'
+
+                url = rp.Url(filename)
+                if url.host == 'localhost' or url.host is None:
+                    sd.target = url
+                    sd.action = rp.TRANSFER
+                elif url.host == self.remote_fs.host:
+                    sd.target = url.path
+                    sd.action = rp.COPY
+                else:
+                    print "### ERROR: Host not supported for this pilot!"
+
+                cud.output_staging.append(sd)
+
             else:
                 if self.verbose:
                     print '### Using per task per stage output file %s as %s' % (filename, label)
                 basename = os.path.basename(filename)
                 task_substitutions[label] = basename
-                cud.output_data.append('%s > %s' % (basename, filename))
+
+                sd = rp.StagingDirectives()
+                sd.source = basename
+
+                url = rp.Url(filename)
+                if url.host == 'localhost' or url.host is None:
+                    sd.target = url
+                    sd.action = rp.TRANSFER
+                elif url.host == self.remote_fs.host:
+                    sd.target = url.path
+                    sd.action = rp.COPY
+                else:
+                    print "### ERROR: Host not supported for this pilot!"
+
+                cud.output_staging.append(sd)
 
         if stage != self.task_desc.num_stages: # If not the latest stage
             for entry in self.io_desc.intermediate_output_per_task_per_stage:
@@ -306,7 +413,21 @@ class Engine(object):
                     print '### Using intermediate per task per stage output file %s as %s' % (filename, label)
                 basename = os.path.basename(filename)
                 task_substitutions[label] = basename
-                cud.output_data.append('%s > %s' % (basename, filename))
+
+                sd = rp.StagingDirectives()
+                sd.source = basename
+
+                url = rp.Url(filename)
+                if url.host == 'localhost' or url.host is None:
+                    sd.target = url
+                    sd.action = rp.TRANSFER
+                elif url.host == self.remote_fs.host:
+                    sd.target = url.path
+                    sd.action = rp.COPY
+                else:
+                    print "### ERROR: Host not supported for this pilot!"
+
+                cud.output_staging.append(sd)
 
         if stage == self.task_desc.num_stages: # If this is the last step
             for label, pattern in self.io_desc.output_per_task_final_stage.items():
@@ -316,7 +437,21 @@ class Engine(object):
                     print '### Using per task final stage output file %s as %s' % (filename, label)
                 basename = os.path.basename(filename)
                 task_substitutions[label] = basename
-                cud.output_data.append('%s > %s' % (basename, filename))
+
+                sd = rp.StagingDirectives()
+                sd.source = basename
+
+                url = rp.Url(filename)
+                if url.host == 'localhost' or url.host is None:
+                    sd.target = url
+                    sd.action = rp.TRANSFER
+                elif url.host == self.remote_fs.host:
+                    sd.target = url.path
+                    sd.action = rp.COPY
+                else:
+                    print "### ERROR: Host not supported for this pilot!"
+
+                cud.output_staging.append(sd)
 
 
         # Name
