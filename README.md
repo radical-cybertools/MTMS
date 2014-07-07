@@ -11,14 +11,34 @@ For the execution mtms relies on RADICAL-Pilot.
 
 First we create a python virtual environment to safely play around:
 ```bash
-virtualenv /tmp/ve
-source /tmp/ve/bin/activate
+virtualenv /tmp/mtms-ve
+source /tmp/mtms-ve/bin/activate
+```
+As MTMS depends on non-released versions of RADICAL-Pilot, SAGA-Python and MD-Kernels, we install those first.
+```bash
+mkdir /tmp/mtms-src
+cd /tmp/mtms-src
+git clone https://github.com/radical-cybertools/saga-python.git
+cd saga-python
+git checkout devel
+python setup.py install
+cd ..
+git clone https://github.com/radical-cybertools/radical.pilot.git
+cd radical.pilot
+git checkout feature/staging
+python setup.py install
+cd ..
+git clone https://github.com/radical-cybertools/radical.ensemblemd.mdkernels.git
+cd radical.ensemblemd.mdkernels
+git checkout release
+python setup.py install
+cd ..
 ```
 Currently MTMS is only installable from source:
 ```bash
-cd /tmp
 git clone https://github.com/radical-cybertools/MTMS.git
 cd MTMS
+git checkout staging
 python setup.py install
 ```
 
