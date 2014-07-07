@@ -105,6 +105,9 @@ io_desc.input_all_tasks_per_stage = {
 }
 ```
 
+In the task\_description we can use any variable as used in the I/O description (like the i\_conf).
+Special variables are ```${TASK}``` and ```${STAGE}```.
+
 ## Preparing data on stampede
 
 To prepare the input data on stampede (and save yourself from the data transfers during the tutorial) please follow the instructions below when logged into stampede:
