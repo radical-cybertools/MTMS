@@ -74,6 +74,8 @@ engine = mtms.Engine()
 engine.execute(res, tasks, io)
 ```
 
+Implementation can be found at: https://github.com/radical-cybertools/MTMS/blob/staging/src/radical/ensemblemd/mtms/mtms.py.
+
 ## Preparing data on stampede
 
 To prepare the input data on stampede (and save yourself from the data transfers during the tutorial) please follow the instructions below when logged into stampede:
@@ -98,6 +100,8 @@ The script uses the hierarchical directory layout for the input data as in the p
 the first tier represents 5 chromosome sites, and the second tier represents 21 locations along the DNA sequence representing the start of the nucleosome.
 You can see how that is used in the script at line 59 of examples/namd_mtms_wf.py.
 For every location 20 simulations of 1ns are performed.
+
+The code of the example can be seen here: https://github.com/radical-cybertools/MTMS/blob/staging/examples/namd_mtms_wf.py.
 
 To cut execution time of this example, the number of chromosomes is 2, with each just 1 location and the number of simulations per location is 3.
 This leads to 6 MD simulations instead of 2100.
