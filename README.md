@@ -76,6 +76,21 @@ engine.execute(res, tasks, io, verbose)
 
 Implementation can be found at: https://github.com/radical-cybertools/MTMS/blob/staging/src/radical/ensemblemd/mtms/mtms.py.
 
+## I/O Description
+
+```python
+# Task I/O specification in the form of { 'label': 'pattern' }
+io.input_per_task_first_stage={}
+io.input_all_tasks_per_stage={}
+io.input_per_task_all_stages={}
+
+io.output_per_task_per_stage={}
+io.output_per_task_final_stage={}
+
+# Intermediate in the form of [{input_label, output_label, pattern}]
+io.intermediate_output_per_task_per_stage=[]
+```
+
 ## Preparing data on stampede
 
 To prepare the input data on stampede (and save yourself from the data transfers during the tutorial) please follow the instructions below when logged into stampede:
