@@ -91,6 +91,20 @@ io.output_per_task_final_stage={}
 io.intermediate_output_per_task_per_stage=[]
 ```
 
+## Templating / Variable expansion
+
+```python
+task_desc = mtms.Task_Description()
+task_desc.kernel = 'NAMD'
+task_desc.arguments = '${i_conf}'
+```
+
+```python
+io_desc.input_all_tasks_per_stage = {
+  'i_conf': '%s/dyn-conf-files/dyn${STAGE}.conf' % (DATA_PREFIX),
+}
+```
+
 ## Preparing data on stampede
 
 To prepare the input data on stampede (and save yourself from the data transfers during the tutorial) please follow the instructions below when logged into stampede:
