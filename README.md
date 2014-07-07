@@ -112,7 +112,7 @@ Special variables are ```${TASK}``` and ```${STAGE}```.
 
 This is a NAMD workflow specific example that makes use of the mtms library.
 To run the supplied example, you can need to perform the described steps (from
-the /tmp/MTMS directory created earlier).
+the /tmp/mtms-src/MTMS directory created earlier).
 
 The experiment configuration is based on the paper
 ["Scalable online comparative genomics of mononucleosomes: a BigJob"](http://dl.acm.org/citation.cfm?id=2484819).
@@ -141,8 +141,9 @@ cd data_bishop
 ./populate_data_directory_bishop.sh
 ```
 
-To start the experiment, run the following command from the same directory.
+To start the experiment, run the following command from the MTMS source directory on your laptop:
 ```bash
+/tmp/mtms-src/MTMS
 python examples/namd_mtms_wf.py
 ```
 Depending on network speed and queueing times, this should take around 5 minutes to execute.
