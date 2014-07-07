@@ -108,18 +108,6 @@ io_desc.input_all_tasks_per_stage = {
 In the task\_description we can use any variable as used in the I/O description (like the i\_conf).
 Special variables are ```${TASK}``` and ```${STAGE}```.
 
-## Preparing data on stampede
-
-To prepare the input data on stampede (and save yourself from the data transfers during the tutorial) please follow the instructions below when logged into stampede:
-```bash
-cd $WORK
-mkdir demo
-cd demo
-cp -pr /work/01740/marksant/demo/data_bishop .
-cd data_bishop
-./populate_data_directory_bishop.sh
-```
-
 ## NAMD workflow execution
 
 This is a NAMD workflow specific example that makes use of the mtms library.
@@ -142,6 +130,16 @@ Of course you are free to change these numbers, you can do that starting at line
 The current script assumes you have an account on the TACC XSEDE Stampede cluster.
 If not, you can configure to run on another cluster or on your localhost by changing
 the code from line 18 of examples/namd_mtms_wf.py.
+
+To prepare the input data on stampede (and save yourself from the data transfers during the tutorial) please follow the instructions below when logged into stampede:
+```bash
+cd $WORK
+mkdir demo
+cd demo
+cp -pr /work/01740/marksant/demo/data_bishop .
+cd data_bishop
+./populate_data_directory_bishop.sh
+```
 
 To start the experiment, run the following command from the same directory.
 ```bash
