@@ -24,6 +24,7 @@ if __name__ == '__main__':
     # Stampede
     resource_desc.resource = 'stampede.tacc.utexas.edu'
     resource_desc.cores = 16
+    resource_desc.project = "TG-MCB090174"
     DATA_PREFIX = "sftp://stampede.tacc.utexas.edu/work/01740/marksant/demo/data"
     #DATA_PREFIX = 'file://localhost' + os.getcwd() + '/data'
     #
