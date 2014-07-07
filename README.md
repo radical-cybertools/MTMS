@@ -11,14 +11,34 @@ For the execution mtms relies on RADICAL-Pilot.
 
 First we create a python virtual environment to safely play around:
 ```bash
-virtualenv /tmp/ve
-source /tmp/ve/bin/activate
+virtualenv /tmp/mtms-ve
+source /tmp/mtms-ve/bin/activate
+```
+As MTMS depends on non-released versions of RADICAL-Pilot, SAGA-Python and MD-Kernels, we install those first.
+```bash
+mkdir /tmp/mtms-src
+cd /tmp/mtms-src
+git clone https://github.com/radical-cybertools/saga-python.git
+cd saga-python
+git checkout devel
+python setup.py install
+cd ..
+git clone https://github.com/radical-cybertools/radical.pilot.git
+cd radical.pilot
+git checkout feature/staging
+python setup.py install
+cd ..
+git clone https://github.com/radical-cybertools/radical.ensemblemd.mdkernels.git
+cd radical.ensemblemd.mdkernels
+git checkout release
+python setup.py install
+cd ..
 ```
 Currently MTMS is only installable from source:
 ```bash
-cd /tmp
 git clone https://github.com/radical-cybertools/MTMS.git
 cd MTMS
+git checkout staging
 python setup.py install
 ```
 
@@ -51,14 +71,48 @@ io = mtms.IO_Description()
 tasks = mtms.Task_Description()
 engine = mtms.Engine()
 
-engine.execute(res, tasks, io)
+engine.execute(res, tasks, io, verbose)
 ```
 
-## Example: NAMD workflow
+Implementation can be found at: https://github.com/radical-cybertools/MTMS/blob/staging/src/radical/ensemblemd/mtms/mtms.py.
+
+## I/O Description
+
+```python
+# Task I/O specification in the form of { 'label': 'pattern' }
+io.input_per_task_first_stage={}
+io.input_all_tasks_per_stage={}
+io.input_per_task_all_stages={}
+
+io.output_per_task_per_stage={}
+io.output_per_task_final_stage={}
+
+# Intermediate in the form of [{input_label, output_label, pattern}]
+io.intermediate_output_per_task_per_stage=[]
+```
+
+## Templating / Variable expansion
+
+```python
+task_desc = mtms.Task_Description()
+task_desc.kernel = 'NAMD'
+task_desc.arguments = '${i_conf}'
+```
+
+```python
+io_desc.input_all_tasks_per_stage = {
+  'i_conf': '%s/dyn-conf-files/dyn${STAGE}.conf' % (DATA_PREFIX),
+}
+```
+
+In the task\_description we can use any variable as used in the I/O description (like the i\_conf).
+Special variables are ```${TASK}``` and ```${STAGE}```.
+
+## NAMD workflow execution
 
 This is a NAMD workflow specific example that makes use of the mtms library.
 To run the supplied example, you can need to perform the described steps (from
-the /tmp/MTMS directory created earlier).
+the /tmp/mtms-src/MTMS directory created earlier).
 
 The experiment configuration is based on the paper
 ["Scalable online comparative genomics of mononucleosomes: a BigJob"](http://dl.acm.org/citation.cfm?id=2484819).
@@ -67,30 +121,32 @@ the first tier represents 5 chromosome sites, and the second tier represents 21 
 You can see how that is used in the script at line 59 of examples/namd_mtms_wf.py.
 For every location 20 simulations of 1ns are performed.
 
+The code of the example can be seen here: https://github.com/radical-cybertools/MTMS/blob/staging/examples/namd_mtms_wf.py.
+
 To cut execution time of this example, the number of chromosomes is 2, with each just 1 location and the number of simulations per location is 3.
 This leads to 6 MD simulations instead of 2100.
-Of course you are free to change these numbers, you can do that starting at line 34 of examples/namd_mtms_wf.py.
+Of course you are free to change these numbers, you can do that starting at line 46 of examples/namd_mtms_wf.py.
 
 The current script assumes you have an account on the TACC XSEDE Stampede cluster.
 If not, you can configure to run on another cluster or on your localhost by changing
-the code at line 22 of examples/namd_mtms_wf.py.
+the code from line 18 of examples/namd_mtms_wf.py.
 
-Note that for demonstration purposes and saving you from the hassle of installing NAMD, this workflow doesn't run the real NAMD binary, but
-other than that the workflow is completely genuine.
-
-First to create a dummy set of input data files:
+To prepare the input data on stampede (and save yourself from the data transfers during the tutorial) please follow the instructions below when logged into stampede:
 ```bash
-./performance/populate_data_directory_small.sh
+cd $WORK
+mkdir demo
+cd demo
+cp -pr /work/01740/marksant/demo/data_bishop .
+cd data_bishop
+./populate_data_directory_bishop.sh
 ```
-This creates a /tmp/MTMS/data directory that will be used during the
-experiment.
 
-To start the experiment, run the following command from the same directory.
+To start the experiment, run the following command from the MTMS source directory on your laptop:
 ```bash
+/tmp/mtms-src/MTMS
 python examples/namd_mtms_wf.py
 ```
-Depending on network speed and queueing times, this should take around 5
-minutes to execute.
+Depending on network speed and queueing times, this should take around 5 minutes to execute.
 
 All with all this should give you the output of a verbose run of an MTMS application.
 Please look at the example code to get a feeling for how to use MTMS for your own application.
