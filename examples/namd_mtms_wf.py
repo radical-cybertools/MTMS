@@ -13,18 +13,32 @@ if __name__ == '__main__':
     # Resource configuration
     #
     resource_desc = mtms.Resource_Description()
-    resource_desc.runtime = 42 # minutes
-    resource_desc.cores = 32
+    resource_desc.runtime = 30 # minutes
     #
     # Localhost
     #resource_desc.resource = 'localhost'
+    #resource_desc.cores = 4
     #resource_desc.dburl = 'mongodb://localhost:27017'
+    #DATA_PREFIX = os.getcwd()
     #
     # Stampede
-    #resource_desc.resource = 'stampede.tacc.utexas.edu'
+    resource_desc.resource = 'stampede.tacc.utexas.edu'
+    resource_desc.cores = 16
+    DATA_PREFIX = "sftp://stampede.tacc.utexas.edu/work/01740/marksant/demo/data"
+    #DATA_PREFIX = 'file://localhost' + os.getcwd() + '/data'
     #
     # India
-    resource_desc.resource = 'india.futuregrid.org'
+    #resource_desc.resource = 'india.futuregrid.org'
+    #
+    # Archer
+    #resource_desc.resource = 'archer.ac.uk'
+    #resource_desc.project = 'e290'
+    #resource_desc.cores = 24
+    #DATA_PREFIX = 'file://localhost' + os.getcwd() + '/data'
+    #DATA_PREFIX= "sftp://login.archer.ac.uk/fs4/e290/e290/marksant/demo/data"
+    #
+    # SuperMUC
+    #resource_desc.resource = 'supermuc.lrz.de'
 
     #
     # Application specific runtime characteristics
@@ -32,15 +46,14 @@ if __name__ == '__main__':
     # Number of chromosomes
     NUM_CHRS = 1 # exp:5
     # Number of locations per chromosome
-    NUM_LOCS = 1 # exp:21
+    NUM_LOCS = 2 # exp:21
     # The time of simulation per system
     SIM_TRAJ_TIME = 3 # exp:20
     # The simulation time per dynamic step
     TASK_SIM_TIME = 1
     # Executable kernel to run for every task
     KERNEL = 'NAMD'
-    CORES = 16
-    DATA_PREFIX = os.path.join(os.getcwd(), 'data')
+    CORES = 8
     VERBOSE=True
 
     ######################################################################
