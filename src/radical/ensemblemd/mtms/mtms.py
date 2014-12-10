@@ -156,7 +156,7 @@ class Engine(object):
 
         # Find remote fs endpoint
         rc = session.get_resource_config(resource_desc.resource)
-        self.remote_fs = rp.Url(rc['remote_filesystem_endpoint'])
+        self.remote_fs = rp.Url(rc['filesystem_endpoint'])
 
         # Add a Pilot Manager
         pmgr = rp.PilotManager(session=session)
