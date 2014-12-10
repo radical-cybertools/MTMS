@@ -126,13 +126,20 @@ class Engine(object):
         ting = datetime.datetime.now()
         cu = self.umgr.submit_units(mtms_cud)
         ted = datetime.datetime.now()
-        self.log('Submitted task %s stage %d' % (task, stage))
 
         # Add to repo
-        self.task_repo[cu.uid] = {'task': task, 'stage': stage, 'desc': mtms_cud}
+        self.task_repo[cu.uid] = {
+            'task': task,
+            'stage': stage,
+            'desc': mtms_cud,
+            'ts_submitting': ting,
+            'ts_submitted': ted
+        }
 
-        self.task_repo[cu.uid]['ts_submitting'] = ting
-        self.task_repo[cu.uid]['ts_submitted'] = ted
+        self.log('Submitted task %s stage %d' % (task, stage))
+
+        # Register the callback for unit state changes
+        cu.register_callback(self.unit_state_change_cb)
 
     def log(self, msg):
         now = datetime.datetime.now()
@@ -183,9 +190,6 @@ class Engine(object):
         self.umgr = rp.UnitManager( session=session, scheduler=rp.SCHED_DIRECT_SUBMISSION)
         if self.verbose:
             print "UnitManager UID  : {0} ".format(self.umgr.uid)
-
-        # Register callbacks for unit state changes
-        self.umgr.register_callback(self.unit_state_change_cb)
 
          # Add the previously created ComputePilot to the UnitManager.
         self.umgr.add_pilots(pilot)
