@@ -155,11 +155,8 @@ class Engine(object):
             print "Session UID      : {0} ".format(session.uid)
 
         # Find remote fs endpoint
-        res = session.list_resource_configs()
-        if resource_desc.resource in res:
-            rc = res[resource_desc.resource]
-            if 'remote_filesystem_endpoint' in rc:
-                self.remote_fs = rp.Url(rc['remote_filesystem_endpoint'])
+        rc = session.get_resource_config(resource_desc.resource)
+        self.remote_fs = rp.Url(rc['remote_filesystem_endpoint'])
 
         # Add a Pilot Manager
         pmgr = rp.PilotManager(session=session)
