@@ -261,14 +261,15 @@ class Engine(object):
                 task_substitutions[label] = os.path.basename(filename)
 
                 url = rp.Url(filename)
-                sd = rp.StagingDirectives()
-                sd.source = url.path
-                sd.target = os.path.basename(filename)
+                sd = {
+                    'source': url.path,
+                    'target': os.path.basename(filename)
+                }
 
                 if url.host == 'localhost' or url.host is None:
-                    sd.action = rp.TRANSFER
+                    sd['action'] = rp.TRANSFER
                 elif url.host == self.remote_fs.host:
-                    sd.action = rp.LINK
+                    sd['action'] = rp.LINK
                 else:
                     print "### ERROR: Host not supported for this pilot!"
 
@@ -282,14 +283,15 @@ class Engine(object):
             task_substitutions[label] = os.path.basename(filename)
 
             url = rp.Url(filename)
-            sd = rp.StagingDirectives()
-            sd.source = url.path
-            sd.target = os.path.basename(filename)
+            sd = {
+                'source': url.path,
+                'target': os.path.basename(filename)
+            }
 
             if url.host == 'localhost' or url.host is None:
-                sd.action = rp.TRANSFER
+                sd['action'] = rp.TRANSFER
             elif url.host == self.remote_fs.host:
-                sd.action = rp.LINK
+                sd['action'] = rp.LINK
             else:
                 print "### ERROR: Host not supported for this pilot!"
 
@@ -305,14 +307,15 @@ class Engine(object):
                 task_substitutions[label] = os.path.basename(filename)
 
                 url = rp.Url(filename)
-                sd = rp.StagingDirectives()
-                sd.source = url.path
-                sd.target = os.path.basename(filename)
+                sd = {
+                    'source': url.path,
+                    'target': os.path.basename(filename)
+                }
 
                 if url.host == 'localhost' or url.host is None:
-                    sd.action = rp.TRANSFER
+                    sd['action'] = rp.TRANSFER
                 elif url.host == self.remote_fs.host:
-                    sd.action = rp.LINK
+                    sd['action'] = rp.LINK
                 else:
                     print "### ERROR: Host not supported for this pilot!"
 
@@ -326,14 +329,15 @@ class Engine(object):
             task_substitutions[label] = os.path.basename(filename)
 
             url = rp.Url(filename)
-            sd = rp.StagingDirectives()
-            sd.source = url.path
-            sd.target = os.path.basename(filename)
+            sd = {
+                'source': url.path,
+                'target': os.path.basename(filename)
+            }
 
             if url.host == 'localhost' or url.host is None:
-                sd.action = rp.TRANSFER
+                sd['action'] = rp.TRANSFER
             elif url.host == self.remote_fs.host:
-                sd.action = rp.LINK
+                sd['action'] = rp.LINK
             else:
                 print "### ERROR: Host not supported for this pilot!"
 
@@ -347,14 +351,15 @@ class Engine(object):
                     print '### Using per task per stage STDOUT file as %s' % (filename)
 
                 url = rp.Url(filename)
-                sd = rp.StagingDirectives()
-                sd.source = 'STDOUT'
-                sd.target = url.path
+                sd = {
+                    'source': 'STDOUT',
+                    'target': url.path
+                }
 
                 if url.host == 'localhost' or url.host is None:
-                    sd.action = rp.TRANSFER
+                    sd['action'] = rp.TRANSFER
                 elif url.host == self.remote_fs.host:
-                    sd.action = rp.COPY
+                    sd['action'] = rp.COPY
                 else:
                     print "### ERROR: Host not supported for this pilot!"
 
@@ -365,14 +370,15 @@ class Engine(object):
                     print '### Using per task per stage STDERR file as %s' % (filename)
 
                 url = rp.Url(filename)
-                sd = rp.StagingDirectives()
-                sd.source = 'STDERR'
-                sd.target = url.path
+                sd = {
+                    'source': 'STDERR',
+                    'target': url.path
+                }
 
                 if url.host == 'localhost' or url.host is None:
-                    sd.action = rp.TRANSFER
+                    sd['action'] = rp.TRANSFER
                 elif url.host == self.remote_fs.host:
-                    sd.action = rp.COPY
+                    sd['action'] = rp.COPY
                 else:
                     print "### ERROR: Host not supported for this pilot!"
 
@@ -385,14 +391,15 @@ class Engine(object):
                 task_substitutions[label] = basename
 
                 url = rp.Url(filename)
-                sd = rp.StagingDirectives()
-                sd.source = basename
-                sd.target = url.path
+                sd = {
+                    'source': basename,
+                    'target': url.path
+                }
 
                 if url.host == 'localhost' or url.host is None:
-                    sd.action = rp.TRANSFER
+                    sd['action'] = rp.TRANSFER
                 elif url.host == self.remote_fs.host:
-                    sd.action = rp.COPY
+                    sd['action'] = rp.COPY
                 else:
                     print "### ERROR: Host not supported for this pilot!"
 
@@ -409,14 +416,15 @@ class Engine(object):
                 task_substitutions[label] = basename
 
                 url = rp.Url(filename)
-                sd = rp.StagingDirectives()
-                sd.source = basename
-                sd.target = url.path
+                sd = {
+                    'source': basename,
+                    'target': url.path
+                }
 
                 if url.host == 'localhost' or url.host is None:
-                    sd.action = rp.TRANSFER
+                    sd['action'] = rp.TRANSFER
                 elif url.host == self.remote_fs.host:
-                    sd.action = rp.COPY
+                    sd['action'] = rp.COPY
                 else:
                     print "### ERROR: Host not supported for this pilot!"
 
@@ -432,14 +440,15 @@ class Engine(object):
                 task_substitutions[label] = basename
 
                 url = rp.Url(filename)
-                sd = rp.StagingDirectives()
-                sd.source = basename
-                sd.target = url.path
+                sd = {
+                    'source': basename,
+                    'target': url.path
+                }
 
                 if url.host == 'localhost' or url.host is None:
-                    sd.action = rp.TRANSFER
+                    sd['action'] = rp.TRANSFER
                 elif url.host == self.remote_fs.host:
-                    sd.action = rp.COPY
+                    sd['action'] = rp.COPY
                 else:
                     print "### ERROR: Host not supported for this pilot!"
 
